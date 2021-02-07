@@ -33,7 +33,7 @@ in rec {
 
       ${pkgs.nix}/bin/nix-build "$NIXFILE" $ATTR_ARG > result_list
       echo "Built $(cat result_list)"
-      cp -r $(head -n 1 result_list)/* "$OUTPUT/"
+      cp -Lr $(head -n 1 result_list)/* "$OUTPUT/"
     '');
 
     config.Cmd = [ "/bin/build" ];
