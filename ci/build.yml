@@ -11,6 +11,12 @@ resources:
       branch: master
       paths:
         - ci/
+  - name: nix-build-task-dockerhub
+    type: registry-image
+    source:
+      repository: risicle/nix-build-task
+      username: ((dockerhub-username))
+      password: ((dockerhub-password))
 
 jobs:
   - name: update-pipeline
@@ -36,9 +42,13 @@ jobs:
           inputs:
             - name: nix-build-task-git
           outputs:
-            - name: output
+            - name: image
           params:
             NIXFILE: nix-build-task-git/
             ATTR: imageConcourse
+            OUTPUT: image
           run:
             path: /bin/build
+      - put: nix-build-task-dockerhub
+        params:
+          image: image/image.tar
