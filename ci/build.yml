@@ -19,24 +19,26 @@ jobs:
     - get: nix-build-task-pipeline-git
       trigger: true
     - set_pipeline: nix-build-task-build
-      file: ci/build.yml
+      file: nix-build-task-pipeline-git/ci/build.yml
 
-  - name:
+  - name: build-image
     serial: true
     plan:
       - get: nix-build-task-git
         trigger: true
       - task: build
-        image_resource:
-          type: registry-image
-          source:
-            repository: risicle/nix-build-task
-        inputs:
-          - name: nix-build-task-git
-        outputs:
-          - name: output
-        params:
-          NIXFILE: nix-build-task-git/
-          ATTR: imageConcourse
-        run:
-          path: /bin/build
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: risicle/nix-build-task
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: output
+          params:
+            NIXFILE: nix-build-task-git/
+            ATTR: imageConcourse
+          run:
+            path: /bin/build
