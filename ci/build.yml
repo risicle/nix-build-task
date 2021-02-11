@@ -27,28 +27,61 @@ jobs:
     - set_pipeline: nix-build-task-build
       file: nix-build-task-pipeline-git/ci/build.yml
 
-  - name: build-image
+  - name: bootstrap-image
     serial: true
     plan:
       - get: nix-build-task-git
         trigger: true
-      - task: build
+      - task: stage-0-build
+        output_mapping:
+          output: stage-0-image
         config:
           platform: linux
           image_resource:
             type: registry-image
             source:
-              repository: risicle/nix-build-task
+              repository: nixos/nix
           inputs:
             - name: nix-build-task-git
           outputs:
-            - name: image
+            - name: output
+          run:
+            path: /bin/ash
+            args:
+              - -e
+              - -c
+              - |
+                nix-channel --add https://nixos.org/channels/nixos-20.09 nixpkgs
+                nix-channel --update
+                SKOPEO=$(nix-build '<nixpkgs>' -A skopeo)/bin/skopeo
+                OCI_IMAGE_TOOL=$(nix-build '<nixpkgs>' -A oci-image-tool)/bin/oci-image-tool
+                JQ=$(nix-build '<nixpkgs>' -A jq)/bin/jq
+
+                nix-build nix-build-task-git -A image
+                gzip -dc result > output/image.tar
+                $SKOPEO inspect docker-archive:output/image.tar > image.json
+                $JQ '.Digest' image.json > output/digest
+                $JQ '{env: .Env, user: .User}' image.json > output/metadata.json
+                $SKOPEO --insecure-policy copy docker-archive:output/image.tar oci:oci_dir:latest
+                $OCI_IMAGE_TOOL unpack oci_dir output/rootfs --ref name=latest
+
+      - task: stage-1-build
+        image: stage-0-image
+        output_mapping:
+          output0: stage-1-image
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: output0
           params:
-            NIXFILE: nix-build-task-git/
-            ATTR: imageConcourse
-            OUTPUT: image
+            NIXFILE: nix-build-task-git
+            ATTR0: image
+            OUTPUT0_PREPARE_IMAGE: 1
           run:
             path: /bin/build
-      - put: nix-build-task-dockerhub
+
+      - put: nix-build-task-dev-dockerhub
         params:
-          image: image/image.tar
+          image: stage-1-image/image.tar

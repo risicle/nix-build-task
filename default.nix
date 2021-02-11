@@ -13,7 +13,6 @@ let
     os = "linux";
     arch = "x86_64";
   };
-  nix-build-task-lib = import ./lib.nix { inherit pkgs; };
 in rec {
   image = pkgs.dockerTools.buildImage {
     name = "nix-build-task";
@@ -21,23 +20,27 @@ in rec {
 
     fromImage = baseImage_;
 
-    contents = (pkgs.writeScriptBin "build" ''
-      #!${pkgs.bash}/bin/bash
-      set -e
-
-      NIXFILE=''${NIXFILE:-.}
-      OUTPUT=''${OUTPUT:-output}
-      ATTR_ARG=''${ATTR:+-A $ATTR}
-
-      ${pkgs.nix}/bin/nix-build "$NIXFILE" $ATTR_ARG > result_list
-      echo "Built $(cat result_list)"
-      cp -Lr $(head -n 1 result_list)/* "$OUTPUT/"
-    '');
+    contents = pkgs.runCommand "build" {
+      buildInputs = [ pkgs.python3 pkgs.makeWrapper ];
+      wrappedPath = pkgs.lib.makeBinPath (with pkgs; [
+        gnutar
+        gzip
+        nix
+        oci-image-tool
+        skopeo
+        xz
+      ]);
+    } ''
+      mkdir -p $out/bin
+      cp ${./build.py} $out/bin/build
+      wrapProgram $out/bin/build \
+        --set PATH $wrappedPath
+      patchShebangs $out/bin
+    '';
 
     config.Cmd = [ "/bin/build" ];
   };
-  imageConcourse = nix-build-task-lib.concourseStyleImageOutput image;
-  bumpSources = pkgs.writeScript "bump-sources" ''
+  bumpSources = pkgs.writeScriptBin "bump-sources" ''
     #!${pkgs.bash}/bin/bash
     set -e
 
