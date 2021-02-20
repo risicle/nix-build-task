@@ -3,18 +3,12 @@ resources:
     type: git
     source:
       uri: https://github.com/risicle/nix-build-task.git
-      branch: master
-  - name: nix-build-task-pipeline-git
-    type: git
-    source:
-      uri: https://github.com/risicle/nix-build-task.git
-      branch: master
-      paths:
-        - ci/
+      branch: ((working-branch))
   - name: nix-build-task-dockerhub
     type: registry-image
     source:
-      repository: risicle/nix-build-task
+      tag: latest
+      repository: ((working-docker-repo))
       username: ((dockerhub-username))
       password: ((dockerhub-password))
 
@@ -22,15 +16,19 @@ jobs:
   - name: update-pipeline
     serial: true
     plan:
-    - get: nix-build-task-pipeline-git
+    - get: nix-build-task-git
       trigger: true
-    - set_pipeline: nix-build-task-build
-      file: nix-build-task-pipeline-git/ci/build.yml
+    - set_pipeline: self
+      file: nix-build-task-git/ci/build.yml
+      vars:
+        working-branch: ((working-branch))
+        working-docker-repo: ((working-docker-repo))
 
   - name: bootstrap-image
     serial: true
     plan:
       - get: nix-build-task-git
+        passed: [update-pipeline]
         trigger: true
       - task: stage-0-build
         output_mapping:
@@ -82,6 +80,6 @@ jobs:
           run:
             path: /bin/build
 
-      - put: nix-build-task-dev-dockerhub
+      - put: nix-build-task-dockerhub
         params:
           image: stage-1-image/image.tar
