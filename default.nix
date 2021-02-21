@@ -40,10 +40,30 @@ in rec {
 
     config.Cmd = [ "/bin/build" ];
   };
-  bumpSources = pkgs.writeScriptBin "bump-sources" ''
+  bumpSources = pkgs.writeScript "bump-sources" ''
     #!${pkgs.bash}/bin/bash
     set -e
 
-    ${pkgs.niv}/bin/niv update nixpkgs
+    ${pkgs.niv}/bin/niv --no-colors update nixpkgs
   '';
+  bumpSourcesImage = pkgs.dockerTools.buildImage {
+    name = "nix-build-task-bump-sources";
+    contents = pkgs.symlinkJoin {
+      name = "contents";
+      paths = with pkgs; [
+        bash
+        cacert
+        git
+        nix
+        busybox
+        (linkFarm "bump-sources-bin" [{name = "bin/bump-sources"; path = bumpSources;}])
+      ];
+    };
+    config.Env = let
+      crtFile = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+    in [
+      "GIT_SSL_CAINFO=${crtFile}"
+      "NIX_SSL_CERT_FILE=${crtFile}"
+    ];
+  };
 }
