@@ -83,3 +83,40 @@ jobs:
       - put: nix-build-task-dockerhub
         params:
           image: stage-1-image/image.tar
+
+  - name: test-build-images
+    serial: true
+    plan:
+      - get: nix-build-task-dockerhub
+      - get: nix-build-task-git
+        passed: [bootstrap-image]
+      - task: build-multiple
+        image: nix-build-task-dockerhub
+        output_mapping:
+          output: hopefully-alpine-image
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: output
+          params:
+            NIXFILE: nix-build-task-git/tests/images.nix
+            OUTPUT_PREPARE_IMAGE: unpack
+          run:
+            path: /bin/build
+      - task: expect-alpine
+        image: hopefully-alpine-image
+        config:
+          platform: linux
+          inputs:
+            - name: hopefully-alpine-image
+          run:
+            path: /bin/ash
+            args:
+              - -e
+              - -c
+              - |
+                stat hopefully-alpine-image/result
+                stat hopefully-alpine-image/result-2
+                stat hopefully-alpine-image/result-3
