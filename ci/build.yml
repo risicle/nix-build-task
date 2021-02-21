@@ -87,25 +87,26 @@ jobs:
   - name: test-build-images
     serial: true
     plan:
-      - get: nix-build-task-dockerhub
-      - get: nix-build-task-git
-        passed: [bootstrap-image]
+      - in_parallel:
+        - get: nix-build-task-dockerhub
+        - get: nix-build-task-git
+          passed: [bootstrap-image]
       - task: build-multiple
         image: nix-build-task-dockerhub
-        output_mapping:
-          output: hopefully-alpine-image
         config:
           platform: linux
           inputs:
             - name: nix-build-task-git
           outputs:
-            - name: output
+            - name: hopefully-alpine-image
+              path: output
           params:
             NIXFILE: nix-build-task-git/tests/images.nix
             OUTPUT_PREPARE_IMAGE: unpack
+            OUTPUT1_PREPARE_IMAGE: 1  # should be ignored
           run:
             path: /bin/build
-      - task: expect-alpine
+      - task: check-alpine
         image: hopefully-alpine-image
         config:
           platform: linux
@@ -120,3 +121,36 @@ jobs:
                 stat hopefully-alpine-image/result
                 stat hopefully-alpine-image/result-2
                 stat hopefully-alpine-image/result-3
+                cat /etc/alpine-release
+      - task: build-separate
+        image: nix-build-task-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: separate-skopeo-alone-image
+              path: output
+            - name: separate-cf-cli-image
+              path: output1
+          params:
+            NIXFILE: nix-build-task-git/tests/images.nix
+            ATTR: skopeoAlone
+            ATTR1: cf-cli-shell
+            ATTR2: alpine-fetched  # deliberately missing output
+            OUTPUT0_PREPARE_IMAGE: 1
+            OUTPUT1_PREPARE_IMAGE: unpack
+          run:
+            path: /bin/build
+      - task: check-cf-cli-shell
+        image: separate-cf-cli-image
+        config:
+          inputs:
+            - name: separate-skopeo-alone-image
+          run:
+            path: /bin/bash
+            args:
+              - -e
+              - -c
+              - |
+                cf help
