@@ -191,7 +191,7 @@ def _main(nix_command_stem, handle_result_func, post_output_hook):
         itertools.count(),
     ):
         attr = os.environ.get(f"ATTR{attr_index}")
-        if not (attr or i):
+        if not (attr or attr_index):
             attr = os.environ.get("ATTR")
         for_attr_text = f" for attr {attr!r}" if attr else ""
 
