@@ -135,7 +135,7 @@ jobs:
               path: output1
           params:
             NIXFILE: nix-build-task-git/tests/images.nix
-            ATTR: skopeoAlone
+            ATTR: skopeo-alone
             ATTR1: cf-cli-shell
             ATTR2: alpine-fetched  # deliberately missing output
             OUTPUT0_PREPARE_IMAGE: 1
