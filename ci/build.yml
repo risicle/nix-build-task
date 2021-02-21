@@ -145,6 +145,7 @@ jobs:
       - task: check-cf-cli-shell
         image: separate-cf-cli-image
         config:
+          platform: linux
           inputs:
             - name: separate-skopeo-alone-image
           run:
