@@ -4,6 +4,12 @@ resources:
     source:
       uri: https://github.com/risicle/nix-build-task.git
       branch: ((working-branch))
+  - name: nix-build-task-git-bump-sources-branch
+    type: git
+    source:
+      uri: git@github.com:risicle/nix-build-task.git
+      branch: ((bump-sources-branch))
+      private_key: ((github-ssh-key))
   - name: nix-build-task-dockerhub
     type: registry-image
     source:
@@ -11,6 +17,13 @@ resources:
       repository: ((working-docker-repo))
       username: ((dockerhub-username))
       password: ((dockerhub-password))
+  - name: every-friday-night
+    type: time
+    source:
+      location: Europe/London
+      start: 23:00
+      stop: 23:30
+      days: [Friday]
 
 jobs:
   - name: update-pipeline
@@ -23,6 +36,7 @@ jobs:
       vars:
         working-branch: ((working-branch))
         working-docker-repo: ((working-docker-repo))
+        bump-sources-branch: ((bump-sources-branch))
 
   - name: bootstrap-image
     serial: true
@@ -271,3 +285,124 @@ jobs:
                   echo "Expected linux-1-0/failure-recorded to have been created by record-failure"
                   exit 7
                 fi
+
+  - name: bump-sources
+    serial: true
+    plan:
+      - get: every-friday-night
+        trigger: true
+      - get: nix-build-task-git
+        passed: [update-pipeline]
+        trigger: false
+      - task: build-bump-sources-image
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: risicle/nix-build-task
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: bump-sources-image
+              path: output
+          params:
+            NIXFILE: nix-build-task-git/
+            ATTR: bumpSourcesImage
+            OUTPUT_PREPARE_IMAGE: unpack
+          run:
+            path: /bin/build
+      - task: clone-and-bump
+        image: bump-sources-image
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: nix-build-task-git-bumped
+          run:
+            path: /bin/bash
+            args:
+              - -e
+              - -c
+              - |
+                git clone nix-build-task-git nix-build-task-git-bumped
+
+                pushd nix-build-task-git-bumped
+                bump-sources 2>&1 | tee .bump-sources-output
+                popd
+      - task: eval-orig-drv
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: risicle/nix-build-task
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: orig-drv
+              path: output
+          params:
+            NIXFILE: nix-build-task-git/
+            ATTR: image
+          run:
+            path: /bin/build
+            args:
+              - eval-drv
+      - task: eval-bumped-drv
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: risicle/nix-build-task
+          inputs:
+            - name: nix-build-task-git-bumped
+          outputs:
+            - name: bumped-drv
+              path: output
+          params:
+            NIXFILE: nix-build-task-git-bumped/
+            ATTR: image
+          run:
+            path: /bin/build
+            args:
+              - eval-drv
+      - try:
+          task: compare-and-commit
+          image: bump-sources-image
+          config:
+            platform: linux
+            inputs:
+              - name: nix-build-task-git
+              - name: nix-build-task-git-bumped
+              - name: orig-drv
+              - name: bumped-drv
+            outputs:
+              - name: nix-build-task-git-bumped
+            run:
+              path: /bin/bash
+              args:
+                - -e
+                - -c
+                - |
+                  ! diff -ru orig-drv bumped-drv
+                  # should "fail" here if outputs are the same, else..
+                  echo "Difference detected"
+                  pushd nix-build-task-git-bumped
+
+                  echo -n $'bump sources\n\noutput from bump-sources:\n\n' >> .message
+                  cat .bump-sources-output >> .message
+
+                  git checkout -b bump-sources
+
+                  git config user.email 'bump.sources@humanleg.org.uk'
+                  git config user.name 'bump-sources'
+                  git commit --all --file=.message
+                  popd
+          on_success:
+            put: nix-build-task-git-bump-sources-branch
+            params:
+              repository: nix-build-task-git-bumped
+              force: true
