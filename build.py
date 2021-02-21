@@ -12,14 +12,20 @@ import tempfile
 
 def _normalize_args():
     if os.environ.get("ATTR") and os.environ.get("ATTR0"):
-        print("Conflict: both $ATTR and $ATTR0 set", sys.stderr)
+        print(
+            "nix-build-task: error: conflict: both $ATTR and $ATTR0 set",
+            file=sys.stderr,
+        )
         sys.exit(5)
 
     if os.environ.get("ATTR"):
         os.environ["ATTR0"] = os.environ["ATTR"]
 
     if os.environ.get("OUTPUT_PREPARE_IMAGE") and os.environ.get("OUTPUT0_PREPARE_IMAGE"):
-        print('Conflict: both $OUTPUT_PREPARE_IMAGE and $OUTPUT0_PREPARE_IMAGE set', sys.stderr)
+        print(
+            "nix-build-task: error: conflict: both $OUTPUT_PREPARE_IMAGE and $OUTPUT0_PREPARE_IMAGE set",
+            file=sys.stderr,
+        )
         sys.exit(5)
 
     if os.environ.get("OUTPUT_PREPARE_IMAGE"):
@@ -139,13 +145,34 @@ def _image_unpack(image_type, image_tar_path):
 def _post_output_hook_build(attr_index, output_dir_path):
     prepare_image = os.environ.get(f"OUTPUT{attr_index}_PREPARE_IMAGE")
     if prepare_image and prepare_image != "0":
-        image_tar_path = _image_decompress(output_dir_path / "result")
-        image_type, inspect_dict = _image_inspect(image_tar_path)
+        print(
+            f"nix-build-task: preparing image for {output_dir_path}",
+            file=sys.stderr,
+        )
+
+        try:
+            image_tar_path = _image_decompress(output_dir_path / "result")
+            image_type, inspect_dict = _image_inspect(image_tar_path)
+        except _UnknownFileType:
+            print(
+                f"nix-build-task: error: unable to determine image type of {output_dir_path}",
+                file=sys.stderr,
+            )
+            sys.exit(6)
+
+        print(
+            f"nix-build-task: image in {output_dir_path} appears to be {image_type!r}",
+            file=sys.stderr,
+        )
 
         with open(output_dir_path / "digest", "w") as f:
             f.write(inspect_dict.get("Digest"))
 
         if prepare_image.lower() == "unpack":
+            print(
+                f"nix-build-task: unpacking image for {output_dir_path}",
+                file=sys.stderr,
+            )
             with open(output_dir_path / "metadata.json", "w") as f:
                 json.dump({
                     "env": inspect_dict.get("Env"),
@@ -164,6 +191,12 @@ def _main(nix_command_stem, handle_result_func, post_output_hook):
         itertools.count(),
     ):
         attr = os.environ.get(f"ATTR{attr_index}")
+        for_attr_text = f" for attr {attr!r}" if attr else ""
+
+        print(
+            f"nix-build-task: running {nix_command_stem[0]}{for_attr_text}",
+            file=sys.stderr,
+        )
         result_list = subprocess.run(
             nix_command_stem + (os.environ["NIXFILE"],) + (("-A", attr,) if attr else ()),
             stdout=subprocess.PIPE,
@@ -177,10 +210,15 @@ def _main(nix_command_stem, handle_result_func, post_output_hook):
 
         if not output_dir_path.is_dir():
             print(
-                f"Warning: missing output {output_dir_path}, nowhere to put {result_list.stdout}",
-                sys.stderr,
+                f"nix-build-task: warning: missing output {output_dir_path}, "
+                f"nowhere to put results{for_attr_text}",
+                file=sys.stderr,
             )
         else:
+            print(
+                f"nix-build-task: copying results{for_attr_text} to {output_dir_path}",
+                file=sys.stderr,
+            )
             for result_index, _result_line in enumerate(result_list.stdout.splitlines()):
                 result_line = _result_line.strip()
                 if result_line:
