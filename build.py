@@ -87,7 +87,7 @@ def _image_decompress(image_path):
                 check=True,
             )
     elif type_name == "tar":
-        image_tar_path.symlink_to(image_path)
+        image_tar_path.symlink_to(os.path.relpath(image_path, start=image_tar_path.parent))
     else:
         raise _UnknownFileType
 
