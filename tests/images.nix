@@ -3,7 +3,7 @@
   , ...
 }:
 
-{
+rec {
   cf-cli-shell = pkgs.dockerTools.buildImage {
     name = "cf-cli-shell";
     tag = "1.2.3";
@@ -27,10 +27,16 @@
     os = "linux";
     arch = "x86_64";
   };
-  skopeo-alone = pkgs.dockerTools.buildImage {
-    name = "skopeo";
-    tag = "bar";
+  skopeo-alone = let
+    image = pkgs.dockerTools.buildImage {
+      name = "skopeo";
+      tag = "bar";
 
-    contents = pkgs.skopeo;
-  };
+      contents = pkgs.skopeo;
+    };
+  in pkgs.runCommand "skopeo-alone-xz" {
+    inherit image;
+  } ''
+    gzip -dc $image | xz -0 -zc - > $out
+  '';
 }

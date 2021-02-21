@@ -121,6 +121,8 @@ jobs:
                 stat hopefully-alpine-image/result
                 stat hopefully-alpine-image/result-2
                 stat hopefully-alpine-image/result-3
+                stat hopefully-alpine-image/digest
+                stat hopefully-alpine-image/image.tar
                 cat /etc/alpine-release
       - task: build-separate
         image: nix-build-task-dockerhub
@@ -137,7 +139,7 @@ jobs:
             NIXFILE: nix-build-task-git/tests/images.nix
             ATTR: skopeo-alone
             ATTR1: cf-cli-shell
-            ATTR2: alpine-fetched  # deliberately missing output
+            ATTR2: alpine-fetched  # deliberately missing output for this
             OUTPUT0_PREPARE_IMAGE: 1
             OUTPUT1_PREPARE_IMAGE: unpack
           run:
@@ -155,3 +157,5 @@ jobs:
               - -c
               - |
                 cf help
+                stat separate-skopeo-alone-image/image.tar
+                ! stat separate-skopeo-alone-image/rootfs  # shouldn't exist
