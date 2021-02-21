@@ -87,7 +87,7 @@ def _image_decompress(image_path):
                 check=True,
             )
     elif type_name == "tar":
-        image_tar_path.symlink_to(image_path)
+        image_tar_path.relative_to(image_path).symlink_to(image_path)
     else:
         raise _UnknownFileType
 
@@ -95,7 +95,7 @@ def _image_decompress(image_path):
 
 
 def _image_inspect(image_tar_path):
-    with tarfile.open(image_tar_path, "r") as tf:
+    with tarfile.open(image_tar_path, "r:") as tf:
         image_tar_contents = tf.getnames()
 
     if "oci-layout" in image_tar_contents:
