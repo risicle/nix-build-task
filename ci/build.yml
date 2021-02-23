@@ -219,7 +219,9 @@ jobs:
               - -c
               - |
                 # check dirs have no links
-                if find linux-dirs -type l ; then
-                  echo "Output should have no symlinks"
+                find linux-dirs -type l > symlinks_found
+                if [[ -n "$(cat symlinks_found)" ]] ; then
+                  echo "Output should have no symlinks, found"
+                  cat symlinks_found
                   exit 7
                 fi
