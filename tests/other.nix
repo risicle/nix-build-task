@@ -13,7 +13,7 @@ rec {
     {name = "README"; path = pkgs.writeText "README" "Not a lot";}
     {name = "linux_1_0"; path = pkgs.runCommand "linux_1_0" {} ''
       mkdir $out
-      tar -C $out -zxvf ${linux_1_0}
+      tar -C $out -zxf ${linux_1_0}
     '';}
   ];
   skopeo = pkgs.skopeo;

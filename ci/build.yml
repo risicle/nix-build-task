@@ -188,7 +188,7 @@ jobs:
               path: output
           params:
             NIXFILE: nix-build-task-git/tests/images.nix
-            ATTR: literally-just-bash
+            ATTR: literally-just-bash-and-find
             OUTPUT_PREPARE_IMAGE: unpack
           run:
             path: /bin/build
