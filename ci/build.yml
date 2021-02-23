@@ -157,5 +157,69 @@ jobs:
               - -c
               - |
                 cf help
-                stat separate-skopeo-alone-image/image.tar
-                ! stat separate-skopeo-alone-image/rootfs  # shouldn't exist
+                if ! [[ -a separate-skopeo-alone-image/image.tar ]] ; then
+                  echo "separate-skopeo-alone-image/image.tar missing"
+                  exit 7
+                fi
+                if [[ -a separate-skopeo-alone-image/rootfs ]] ; then
+                  echo "separate-skopeo-alone-image/rootfs shouldn't exist"
+                  exit 8
+                fi
+                if [[ "$CF_USERNAME" != 'foo' ]] ; then
+                  echo "CF_USERNAME should be 'foo', not '$CF_USERNAME'"
+                  exit 9
+                fi
+
+  - name: test-build-other
+    serial: true
+    plan:
+      - in_parallel:
+        - get: nix-build-task-image-testing
+        - get: nix-build-task-git
+          passed: [bootstrap-image]
+      - task: build-bash-image
+        image: nix-build-task-image-testing
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: bash-image
+              path: output
+          params:
+            NIXFILE: nix-build-task-git/tests/images.nix
+            ATTR: literally-just-bash
+            OUTPUT_PREPARE_IMAGE: unpack
+          run:
+            path: /bin/build
+      - task: build-dirs
+        image: nix-build-task-image-testing
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: linux-dirs
+              path: output0
+          params:
+            NIXFILE: nix-build-task-git/tests/other.nix
+            ATTR0: linux-dir
+          run:
+            path: /bin/build
+      - task: check-dirs
+        image: bash-image
+        config:
+          platform: linux
+          inputs:
+            - name: linux-dirs
+          run:
+            path: /bin/bash
+            args:
+              - -e
+              - -c
+              - |
+                # check dirs have no links
+                if find linux-dirs -type l ; then
+                  echo "Output should have no symlinks"
+                  exit 7
+                fi

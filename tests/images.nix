@@ -39,4 +39,9 @@ rec {
   } ''
     gzip -dc $image | xz -0 -zc - > $out
   '';
+  literally-just-bash = pkgs.dockerTools.buildImage {
+    name = "literally-just-bash";
+
+    contents = pkgs.bash;
+  };
 }
