@@ -39,12 +39,8 @@ rec {
   } ''
     gzip -dc $image | xz -0 -zc - > $out
   '';
-  literally-just-bash-and-find = pkgs.dockerTools.buildImage {
-    name = "literally-just-bash-and-find";
-
-    contents = pkgs.symlinkJoin {
-      name = "contents";
-      paths = [ pkgs.bash pkgs.findutils ];
-    };
+  literally-just-busybox = pkgs.dockerTools.buildImage {
+    name = "literally-just-busybox";
+    contents = pkgs.busybox;
   };
 }

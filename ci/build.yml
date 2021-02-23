@@ -177,18 +177,18 @@ jobs:
         - get: nix-build-task-dockerhub
         - get: nix-build-task-git
           passed: [bootstrap-image]
-      - task: build-bash-image
+      - task: build-busybox-image
         image: nix-build-task-dockerhub
         config:
           platform: linux
           inputs:
             - name: nix-build-task-git
           outputs:
-            - name: bash-image
+            - name: busybox-image
               path: output
           params:
             NIXFILE: nix-build-task-git/tests/images.nix
-            ATTR: literally-just-bash-and-find
+            ATTR: literally-just-busybox
             OUTPUT_PREPARE_IMAGE: unpack
           run:
             path: /bin/build
@@ -207,21 +207,37 @@ jobs:
           run:
             path: /bin/build
       - task: check-dirs
-        image: bash-image
+        image: busybox-image
         config:
           platform: linux
           inputs:
             - name: linux-dirs
           run:
-            path: /bin/bash
+            path: /bin/ash
             args:
               - -e
               - -c
               - |
                 # check dirs have no links
-                find linux-dirs -type l > symlinks_found
-                if [[ -n "$(cat symlinks_found)" ]] ; then
-                  echo "Output should have no symlinks, found"
-                  cat symlinks_found
+                find linux-dirs -type l > found_symlinks
+                if [ -n "$(cat found_symlinks)" ] ; then
+                  echo "Output should have no symlinks, found:"
+                  cat found_symlinks
                   exit 7
                 fi
+      - try:
+        - task: fail-to-unpack-non-image
+          image: nix-build-task-dockerhub
+          config:
+            platform: linux
+            inputs:
+              - name: nix-build-task-git
+            outputs:
+              - name: linux-1-0
+                path: output0
+            params:
+              NIXFILE: nix-build-task-git/tests/other.nix
+              ATTR0: linux_1_0
+              OUTPUT_PREPARE_IMAGE: unpack
+            run:
+              path: /bin/build
