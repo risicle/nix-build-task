@@ -174,11 +174,11 @@ jobs:
     serial: true
     plan:
       - in_parallel:
-        - get: nix-build-task-image-testing
+        - get: nix-build-task-dockerhub
         - get: nix-build-task-git
           passed: [bootstrap-image]
       - task: build-bash-image
-        image: nix-build-task-image-testing
+        image: nix-build-task-dockerhub
         config:
           platform: linux
           inputs:
@@ -193,7 +193,7 @@ jobs:
           run:
             path: /bin/build
       - task: build-dirs
-        image: nix-build-task-image-testing
+        image: nix-build-task-dockerhub
         config:
           platform: linux
           inputs:
