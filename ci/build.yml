@@ -226,7 +226,7 @@ jobs:
                   exit 7
                 fi
       - try:
-        - task: fail-to-unpack-non-image
+          task: fail-to-unpack-non-image
           image: nix-build-task-dockerhub
           config:
             platform: linux
