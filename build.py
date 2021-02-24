@@ -95,7 +95,7 @@ def _image_decompress(image_path):
 
 
 def _image_inspect(image_tar_path):
-    with tarfile.open(image_tar_path, "r") as tf:
+    with tarfile.open(image_tar_path, "r:") as tf:
         image_tar_contents = tf.getnames()
 
     if "oci-layout" in image_tar_contents:
