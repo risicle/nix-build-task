@@ -83,3 +83,191 @@ jobs:
       - put: nix-build-task-dockerhub
         params:
           image: stage-1-image/image.tar
+
+  - name: test-build-images
+    serial: true
+    plan:
+      - in_parallel:
+        - get: nix-build-task-dockerhub
+        - get: nix-build-task-git
+          passed: [bootstrap-image]
+      - task: build-multiple
+        image: nix-build-task-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: hopefully-alpine-image
+              path: output
+          params:
+            NIXFILE: nix-build-task-git/tests/images.nix
+            OUTPUT_PREPARE_IMAGE: unpack
+            OUTPUT1_PREPARE_IMAGE: 1  # should be ignored
+          run:
+            path: /bin/build
+      - task: check-alpine
+        image: hopefully-alpine-image
+        config:
+          platform: linux
+          inputs:
+            - name: hopefully-alpine-image
+          run:
+            path: /bin/ash
+            args:
+              - -e
+              - -c
+              - |
+                stat hopefully-alpine-image/result
+                stat hopefully-alpine-image/result-2
+                stat hopefully-alpine-image/result-3
+                stat hopefully-alpine-image/digest
+                stat hopefully-alpine-image/image.tar
+                cat /etc/alpine-release
+      - task: build-separate
+        image: nix-build-task-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: separate-skopeo-alone-image
+              path: output
+            - name: separate-cf-cli-image
+              path: output1
+          params:
+            NIXFILE: nix-build-task-git/tests/images.nix
+            ATTR: skopeo-alone
+            ATTR1: cf-cli-shell
+            ATTR2: alpine-fetched  # deliberately missing output for this
+            OUTPUT0_PREPARE_IMAGE: 1
+            OUTPUT1_PREPARE_IMAGE: unpack
+          run:
+            path: /bin/build
+      - task: check-cf-cli-shell
+        image: separate-cf-cli-image
+        config:
+          platform: linux
+          inputs:
+            - name: separate-skopeo-alone-image
+          run:
+            path: /bin/bash
+            args:
+              - -e
+              - -c
+              - |
+                cf help
+                if ! [[ -a separate-skopeo-alone-image/image.tar ]] ; then
+                  echo "separate-skopeo-alone-image/image.tar missing"
+                  exit 7
+                fi
+                if [[ -a separate-skopeo-alone-image/rootfs ]] ; then
+                  echo "separate-skopeo-alone-image/rootfs shouldn't exist"
+                  exit 8
+                fi
+                if [[ "$CF_USERNAME" != 'foo' ]] ; then
+                  echo "CF_USERNAME should be 'foo', not '$CF_USERNAME'"
+                  exit 9
+                fi
+
+  - name: test-build-other
+    serial: true
+    plan:
+      - in_parallel:
+        - get: nix-build-task-dockerhub
+        - get: nix-build-task-git
+          passed: [bootstrap-image]
+      - task: build-busybox-image
+        image: nix-build-task-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: busybox-image
+              path: output
+          params:
+            NIXFILE: nix-build-task-git/tests/images.nix
+            ATTR: literally-just-busybox
+            OUTPUT_PREPARE_IMAGE: unpack
+          run:
+            path: /bin/build
+      - task: build-dirs
+        image: nix-build-task-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: linux-dirs
+              path: output0
+          params:
+            NIXFILE: nix-build-task-git/tests/other.nix
+            ATTR0: linux-dir
+          run:
+            path: /bin/build
+      - task: check-dirs
+        image: busybox-image
+        config:
+          platform: linux
+          inputs:
+            - name: linux-dirs
+          run:
+            path: /bin/ash
+            args:
+              - -e
+              - -c
+              - |
+                # check dirs have no links
+                find linux-dirs -type l > found_symlinks
+                if [ -n "$(cat found_symlinks)" ] ; then
+                  echo "Output should have no symlinks, found:"
+                  cat found_symlinks
+                  exit 7
+                fi
+      - try:
+          task: fail-to-unpack-non-image
+          image: nix-build-task-dockerhub
+          config:
+            platform: linux
+            inputs:
+              - name: nix-build-task-git
+            outputs:
+              - name: linux-1-0
+                path: output0
+            params:
+              NIXFILE: nix-build-task-git/tests/other.nix
+              ATTR0: linux_1_0
+              OUTPUT_PREPARE_IMAGE: unpack
+            run:
+              path: /bin/build
+          on_failure:
+            task: record-failure
+            image: busybox-image
+            config:
+              platform: linux
+              outputs:
+                - name: linux-1-0
+              run:
+                path: /bin/ash
+                args:
+                  - -e
+                  - -c
+                  - |
+                    touch linux-1-0/failure-recorded
+      - task: check-failure
+        image: busybox-image
+        config:
+          platform: linux
+          inputs:
+            - name: linux-1-0
+          run:
+            path: /bin/ash
+            args:
+              - -e
+              - -c
+              - |
+                if ! [ -e linux-1-0/failure-recorded ] ; then
+                  echo "Expected linux-1-0/failure-recorded to have been created by record-failure"
+                  exit 7
+                fi
