@@ -241,3 +241,33 @@ jobs:
               OUTPUT_PREPARE_IMAGE: unpack
             run:
               path: /bin/build
+          on_failure:
+            task: record-failure
+            image: busybox-image
+            config:
+              platform: linux
+              outputs:
+                - name: linux-1-0
+              run:
+                path: /bin/ash
+                args:
+                  - -e
+                  - -c
+                  - |
+                    touch linux-1-0/failure-recorded
+      - task: record-failure
+        image: busybox-image
+        config:
+          platform: linux
+          inputs:
+            - name: linux-1-0
+          run:
+            path: /bin/ash
+            args:
+              - -e
+              - -c
+              - |
+                if ! [ -e linux-1-0/failure-recorded ] ; then
+                  echo "Expected linux-1-0/failure-recorded to have been created by record-failure"
+                  exit 7
+                fi
