@@ -231,7 +231,7 @@ if __name__ == "__main__":
     _normalize_args()
 
     if len(sys.argv) >= 2 and sys.argv[1] == "eval-drv":
-        nix_command_stem = ("nix-instantiate", "--eval",)
+        nix_command_stem = ("nix-instantiate",)
         handle_result_func = _handle_result_evaldrv
         post_output_hook = _nop_func
     else:
