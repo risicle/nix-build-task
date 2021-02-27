@@ -44,7 +44,7 @@ in rec {
     #!${pkgs.bash}/bin/bash
     set -e
 
-    ${pkgs.niv}/bin/niv --no-colors update nixpkgs
+    ${pkgs.niv}/bin/niv update nixpkgs
   '';
   bumpSourcesImage = pkgs.dockerTools.buildImage {
     name = "nix-build-task-bump-sources";
