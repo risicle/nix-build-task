@@ -1,0 +1,37 @@
+on:
+  push:
+    branches: [ bump-sources ]
+
+jobs:
+  check-create-pr:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/github-script@v3
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            const response = await github.graphql(
+             `query { 
+                repository(owner: "risicle", name:"nix-build-task") {
+                  pullRequests(headRefName: "bump-sources", first: 1, states: OPEN) {
+                    nodes {
+                      number
+                    }
+                  }
+                }
+              }`
+            );
+
+            if (response.repository.pullRequests.nodes.length == 0) {
+              github.request("POST /repos/risicle/nix-build-task/pulls", {
+                head: "bump-sources",
+                base: "master",
+                title: "Bump sources",
+                body: `
+                  This is an automated pull request.
+
+                  This bump to nix-build-task's pinned sources results in a new build hash, and should probably be applied.
+                `
+              });
+            }
