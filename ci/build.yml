@@ -387,8 +387,11 @@ jobs:
                 - -e
                 - -c
                 - |
-                  ! diff -ru orig-drv bumped-drv
-                  # should "fail" here if outputs are the same, else..
+                  if diff -ru orig-drv bumped-drv ; then
+                    echo "No difference detected"
+                    exit 7
+                  fi
+
                   echo "Difference detected"
                   pushd nix-build-task-git-bumped
 
