@@ -302,6 +302,8 @@ jobs:
             ATTR0: linux-dir
             BUILD_ARGSTR_readmeExt: .txt
             BUILD_ARG_includeTarball: 1 == 2
+          run:
+            path: /bin/build
       - task: check-args-effect
         image: busybox-image
         config:
