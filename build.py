@@ -213,11 +213,11 @@ _nop_func = lambda *args, **kwargs: None
 def _main(nix_command_stem, handle_result_func, post_output_hook):
     arg_args = tuple(itertools.chain.from_iterable(
         ("--arg", k, v,)
-        for k, v in _get_build_args()
+        for k, v in _get_build_args().items()
     ))
     argstr_args = tuple(itertools.chain.from_iterable(
         ("--argstr", k, v,)
-        for k, v in _get_build_argstrs()
+        for k, v in _get_build_argstrs().items()
     ))
 
     common_args = (os.environ["NIXFILE"],) + arg_args + argstr_args
