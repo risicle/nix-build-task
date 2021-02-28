@@ -24,14 +24,14 @@ jobs:
             );
 
             if (response.repository.pullRequests.nodes.length == 0) {
-              github.request("POST /repos/risicle/nix-build-task/pulls", {
+              github.pulls.create({
+                owner: "risicle",
+                repo: "nix-build-task",
                 head: "bump-sources",
                 base: "master",
                 title: "Bump sources",
-                body: `
-                  This is an automated pull request.
+                body: `This is an automated pull request.
 
-                  This bump to nix-build-task's pinned sources results in a new build hash, and should probably be applied.
-                `
+                This bump to nix-build-task's pinned sources results in a new build hash, and should probably be applied.`
               });
             }
