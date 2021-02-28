@@ -10,6 +10,22 @@ import tarfile
 import tempfile
 
 
+def _get_env_vars_with_prefix(prefix):
+    return {
+        k[len(prefix):]: v
+        for k, v in os.environ.items()
+        if k.startswith(prefix) and len(k) > len(prefix)
+    }
+
+
+def _get_build_args():
+    return _get_env_vars_with_prefix("BUILD_ARG_")
+
+
+def _get_build_argstrs():
+    return _get_env_vars_with_prefix("BUILD_ARGSTR_")
+
+
 def _normalize_args():
     if os.environ.get("ATTR") and os.environ.get("ATTR0"):
         print(
@@ -32,6 +48,15 @@ def _normalize_args():
         os.environ["OUTPUT0_PREPARE_IMAGE"] = os.environ["OUTPUT_PREPARE_IMAGE"]
 
     os.environ["NIXFILE"] = os.environ.get("NIXFILE") or "."
+
+    arg_conflicts = _get_build_args().keys() & _get_build_argstrs().keys()
+    if arg_conflicts:
+        print(
+            "nix-build-task: error: conflict: both BUILD_ARG_ and BUILD_ARGSTR_ set"
+            f" for arguments: {', '.join(arg_conflicts)}",
+            file=sys.stderr,
+        )
+        sys.exit(5)
 
 
 def _handle_result_build(result_index, result_line, output_dir_path):
@@ -186,6 +211,17 @@ _nop_func = lambda *args, **kwargs: None
 
 
 def _main(nix_command_stem, handle_result_func, post_output_hook):
+    arg_args = tuple(itertools.chain.from_iterable(
+        ("--arg", k, v,)
+        for k, v in _get_build_args().items()
+    ))
+    argstr_args = tuple(itertools.chain.from_iterable(
+        ("--argstr", k, v,)
+        for k, v in _get_build_argstrs().items()
+    ))
+
+    common_args = (os.environ["NIXFILE"],) + arg_args + argstr_args
+
     for attr_index in itertools.takewhile(
         lambda i: os.environ.get(f"ATTR{i}") or not i,
         itertools.count(),
@@ -198,7 +234,7 @@ def _main(nix_command_stem, handle_result_func, post_output_hook):
             file=sys.stderr,
         )
         result_list = subprocess.run(
-            nix_command_stem + (os.environ["NIXFILE"],) + (("-A", attr,) if attr else ()),
+            nix_command_stem + common_args + (("-A", attr,) if attr else ()),
             stdout=subprocess.PIPE,
             text=True,
             check=True,
