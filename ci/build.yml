@@ -321,7 +321,7 @@ jobs:
                   exit 7
                 fi
 
-                stat linux-dirs/result/README.txt
+                stat args-output/result/README.txt
 
   - name: bump-sources
     serial: true
