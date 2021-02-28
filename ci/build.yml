@@ -239,6 +239,9 @@ jobs:
                   cat found_symlinks
                   exit 7
                 fi
+
+                stat linux-dirs/result/README.md
+                stat linux-dirs/result/linux_1_0.tar.gz
       - try:
           task: fail-to-unpack-non-image
           image: nix-build-task-dockerhub
@@ -285,6 +288,38 @@ jobs:
                   echo "Expected linux-1-0/failure-recorded to have been created by record-failure"
                   exit 7
                 fi
+      - task: build-with-args
+        image: nix-build-task-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: args-output
+              path: output
+          params:
+            NIXFILE: nix-build-task-git/tests/other.nix
+            ATTR0: linux-dir
+            BUILD_ARGSTR_readmeExt: .txt
+            BUILD_ARG_includeTarball: 1 == 2
+      - task: check-args-effect
+        image: busybox-image
+        config:
+          platform: linux
+          inputs:
+            - name: args-output
+          run:
+            path: /bin/ash
+            args:
+              - -e
+              - -c
+              - |
+                if [ -e args-output/result/linux_1_0.tar.gz ] ; then
+                  echo "Output shouldn't include tarball"
+                  exit 7
+                fi
+
+                stat linux-dirs/result/README.txt
 
   - name: bump-sources
     serial: true
