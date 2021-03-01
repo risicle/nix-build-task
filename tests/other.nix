@@ -20,4 +20,8 @@ rec {
     ] ++ pkgs.lib.optional includeTarball {name = "linux_1_0.tar.gz"; path = linux_1_0;}
   );
   skopeo = pkgs.skopeo;
+  deliberatelyNonDeterministic = pkgs.runCommand "deliberately-non-deterministic" {} ''
+    mkdir -p $out
+    touch $out/$RANDOM
+  '';
 }

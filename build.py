@@ -26,6 +26,10 @@ def _get_build_argstrs():
     return _get_env_vars_with_prefix("BUILD_ARGSTR_")
 
 
+def _get_nix_options():
+    return _get_env_vars_with_prefix("NIX_OPTION_")
+
+
 def _normalize_args():
     if os.environ.get("ATTR") and os.environ.get("ATTR0"):
         print(
@@ -219,8 +223,12 @@ def _main(nix_command_stem, handle_result_func, post_output_hook):
         ("--argstr", k, v,)
         for k, v in _get_build_argstrs().items()
     ))
+    nix_option_args = tuple(itertools.chain.from_iterable(
+        ("--option", k, v,)
+        for k, v in _get_nix_options().items()
+    ))
 
-    common_args = (os.environ["NIXFILE"],) + arg_args + argstr_args
+    common_args = (os.environ["NIXFILE"],) + arg_args + argstr_args + nix_option_args
 
     for attr_index in itertools.takewhile(
         lambda i: os.environ.get(f"ATTR{i}") or not i,
