@@ -259,7 +259,7 @@ jobs:
             run:
               path: /bin/build
           on_failure:
-            task: record-failure
+            task: record-unpack-failure
             image: busybox-image
             config:
               platform: linux
@@ -272,7 +272,7 @@ jobs:
                   - -c
                   - |
                     touch linux-1-0/failure-recorded
-      - task: check-failure
+      - task: check-unpack-failure
         image: busybox-image
         config:
           platform: linux
@@ -285,7 +285,7 @@ jobs:
               - -c
               - |
                 if ! [ -e linux-1-0/failure-recorded ] ; then
-                  echo "Expected linux-1-0/failure-recorded to have been created by record-failure"
+                  echo "Expected linux-1-0/failure-recorded to have been created by record-unpack-failure"
                   exit 7
                 fi
       - task: build-with-args
@@ -322,6 +322,64 @@ jobs:
                 fi
 
                 stat args-output/result/README.txt
+      - task: build-non-deterministic
+        image: nix-build-task-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          params:
+            NIXFILE: nix-build-task-git/tests/other.nix
+            ATTR: deliberatelyNonDeterminisitc
+          run:
+            path: /bin/build
+      - try:
+        - task: build-non-deterministic-enforce-option
+          image: nix-build-task-dockerhub
+          config:
+            platform: linux
+            inputs:
+              - name: nix-build-task-git
+            outputs:
+              - name: non-deterministic-output
+                path: output
+            params:
+              NIXFILE: nix-build-task-git/tests/other.nix
+              ATTR: deliberatelyNonDeterminisitc
+              NIX_OPTION_enforce-determinism: true
+              NIX_OPTION_repeat: 2
+            run:
+              path: /bin/build
+          on_failure:
+            task: record-determinism-failure
+            image: busybox-image
+            config:
+              platform: linux
+              outputs:
+                - name: non-deterministic-output
+              run:
+                path: /bin/ash
+                args:
+                  - -e
+                  - -c
+                  - |
+                    touch non-deterministic-output/failure-recorded
+      - task: check-determinism-failure
+        image: busybox-image
+        config:
+          platform: linux
+          inputs:
+            - name: non-deterministic-output
+          run:
+            path: /bin/ash
+            args:
+              - -e
+              - -c
+              - |
+                if ! [ -e non-deterministic-output/failure-recorded ] ; then
+                  echo "Expected non-deterministic-output/failure-recorded to have been created by record-determinism-failure"
+                  exit 7
+                fi
 
   - name: bump-sources
     serial: true
