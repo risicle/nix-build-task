@@ -330,7 +330,7 @@ jobs:
             - name: nix-build-task-git
           params:
             NIXFILE: nix-build-task-git/tests/other.nix
-            ATTR: deliberatelyNonDeterminisitc
+            ATTR: deliberatelyNonDeterministic
           run:
             path: /bin/build
       - try:
