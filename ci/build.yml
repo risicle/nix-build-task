@@ -345,7 +345,7 @@ jobs:
                 path: output
             params:
               NIXFILE: nix-build-task-git/tests/other.nix
-              ATTR: deliberatelyNonDeterminisitc
+              ATTR: deliberatelyNonDeterministic
               NIX_OPTION_enforce-determinism: true
               NIX_OPTION_repeat: 2
             run:
