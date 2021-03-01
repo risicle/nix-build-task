@@ -334,7 +334,7 @@ jobs:
           run:
             path: /bin/build
       - try:
-        - task: build-non-deterministic-enforce-option
+          task: build-non-deterministic-enforce-option
           image: nix-build-task-dockerhub
           config:
             platform: linux
