@@ -23,6 +23,7 @@ in rec {
     contents = pkgs.runCommand "build" {
       buildInputs = [ pkgs.python3 pkgs.makeWrapper ];
       wrappedPath = pkgs.lib.makeBinPath (with pkgs; [
+        cachix_stderr
         gnutar
         gzip
         nix
@@ -40,6 +41,16 @@ in rec {
 
     config.Cmd = [ "/bin/build" ];
   };
+  # a custom version of cachix which won't output status messages to stdout, which
+  # would get in the way of our use of the stdout to read build outputs
+  cachix_stderr = pkgs.cachix.overrideAttrs (oldAttrs: {
+    patchPhase = oldAttrs.patchPhase + ''
+      find ./ -type f -exec sed -i \
+        -e 's|\bputText\b|putErrText|g' \
+        -e 's|\bputStr\b|hPutStr stderr|g' \
+        {} \;
+    '';
+  });
   bumpSources = pkgs.writeScript "bump-sources" ''
     #!${pkgs.bash}/bin/bash
     set -e

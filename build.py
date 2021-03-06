@@ -214,7 +214,7 @@ def _post_output_hook_build(attr_index, output_dir_path):
 _nop_func = lambda *args, **kwargs: None
 
 
-def _main(nix_command_stem, handle_result_func, post_output_hook):
+def _main(nix_command_stem, nix_command_display, handle_result_func, post_output_hook):
     arg_args = tuple(itertools.chain.from_iterable(
         ("--arg", k, v,)
         for k, v in _get_build_args().items()
@@ -238,7 +238,7 @@ def _main(nix_command_stem, handle_result_func, post_output_hook):
         for_attr_text = f" for attr {attr!r}" if attr else ""
 
         print(
-            f"nix-build-task: running {nix_command_stem[0]}{for_attr_text}",
+            f"nix-build-task: running {nix_command_display}{for_attr_text}",
             file=sys.stderr,
         )
         result_list = subprocess.run(
@@ -271,16 +271,45 @@ def _main(nix_command_stem, handle_result_func, post_output_hook):
             post_output_hook(attr_index, output_dir_path)
 
 
+def _init_cachix():
+    cachix_cache = os.environ.get("CACHIX_CACHE")
+    cachix_conf = os.environ.get("CACHIX_CONF")
+    cachix_signing_key = os.environ.get("CACHIX_SIGNING_KEY")
+
+    command_prefix = ()
+
+    if cachix_conf:
+        pathlib.Path("cachix.dhall").symlink_to(cachix_conf)
+
+    if cachix_cache:
+        print(
+            f"nix-build-task: preparing cachix to use cache {cachix_cache!r}",
+            file=sys.stderr,
+        )
+        subprocess.run(
+            ("cachix", "use", cachix_cache,),
+            check=True,
+        )
+
+        if cachix_conf or cachix_signing_key:
+            command_prefix = ("cachix", "watch-exec", cachix_cache, "--",)
+
+    return command_prefix
+
+
 if __name__ == "__main__":
     _normalize_args()
 
     if len(sys.argv) >= 2 and sys.argv[1] == "eval-drv":
         nix_command_stem = ("nix-instantiate",)
+        nix_command_display = "nix-instantiate"
         handle_result_func = _handle_result_evaldrv
         post_output_hook = _nop_func
     else:
-        nix_command_stem = ("nix-build",)
+        cachix_prefix = _init_cachix()
+        nix_command_stem = cachix_prefix + ("nix-build",)
+        nix_command_display = "nix-build"
         handle_result_func = _handle_result_build
         post_output_hook = _post_output_hook_build
 
-    _main(nix_command_stem, handle_result_func, post_output_hook)
+    _main(nix_command_stem, nix_command_display, handle_result_func, post_output_hook)

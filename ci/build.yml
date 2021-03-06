@@ -381,6 +381,31 @@ jobs:
                   exit 7
                 fi
 
+  - name: test-cachix
+    serial: true
+    plan:
+      - in_parallel:
+        - get: nix-build-task-dockerhub
+        - get: nix-build-task-git
+          passed: [bootstrap-image]
+      - task: build-busybox-image
+        image: nix-build-task-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: busybox-image
+              path: output
+          params:
+            NIXFILE: nix-build-task-git/tests/images.nix
+            ATTR: literally-just-busybox
+            OUTPUT_PREPARE_IMAGE: unpack
+            CACHIX_CACHE: ((cachix-cache))
+            CACHIX_SIGNING_KEY: ((cachix-signing-key))
+          run:
+            path: /bin/build
+
   - name: bump-sources
     serial: true
     plan:
