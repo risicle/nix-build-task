@@ -548,12 +548,132 @@ jobs:
               path: output
           params:
             NIXFILE: nix-build-task-git/tests/images.nix
-            ATTR: literally-just-busybox
+            ATTR: busybox-with-curl
             OUTPUT_PREPARE_IMAGE: unpack
             CACHIX_CACHE: ((cachix-cache))
             CACHIX_SIGNING_KEY: ((cachix-signing-key))
           run:
             path: /bin/build
+      - task: generate-run-random
+        image: busybox-image
+        config:
+          platform: linux
+          outputs:
+            - name: run-random-output
+          run:
+            path: /bin/ash
+            args:
+              - -e
+              - -c
+              - |
+                hexdump -e '/1 "%02x"' -n 8 /dev/random > run-random-output/value
+      - load_var: run-random
+        file: run-random-output/value
+        format: trim
+        reveal: true
+      - task: build-nd-nopush-emptycache
+        image: nix-build-task-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: nd-nopush-emptycache
+              path: output
+          params:
+            NIXFILE: nix-build-task-git/tests/other.nix
+            ATTR: deliberatelyNonDeterministic
+            BUILD_ARGSTR_someArg: ((.:run-random))
+            CACHIX_CACHE: ((cachix-cache))
+          run:
+            path: /bin/build
+      - task: check-cache-empty
+        image: busybox-image
+        config:
+          platform: linux
+          inputs:
+            - name: nd-nopush-emptycache
+          run:
+            path: /bin/ash
+            args:
+              - -e
+              - -c
+              - |
+                OUTPATH_HASH=$(egrep -o '\b[a-z0-9]{32}\b' nd-nopush-emptycache/result.outpath)
+                URL="https://((cachix-cache)).cachix.org/$OUTPATH_HASH.narinfo"
+                echo "Probing $URL"
+                if curl -f $URL || [ $? != 22 ] ; then
+                  echo "Expected to get 404 when checking cache"
+                  exit 7
+                fi
+      - task: build-nd-emptycache
+        image: nix-build-task-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: nd-emptycache
+              path: output
+          params:
+            NIXFILE: nix-build-task-git/tests/other.nix
+            ATTR: deliberatelyNonDeterministic
+            BUILD_ARGSTR_someArg: ((.:run-random))
+            CACHIX_CACHE: ((cachix-cache))
+            CACHIX_SIGNING_KEY: ((cachix-signing-key))
+          run:
+            path: /bin/build
+      - task: check-cache-present
+        image: busybox-image
+        config:
+          platform: linux
+          inputs:
+            - name: nd-emptycache
+          run:
+            path: /bin/ash
+            args:
+              - -e
+              - -c
+              - |
+                OUTPATH_HASH=$(egrep -o '\b[a-z0-9]{32}\b' nd-emptycache/result.outpath)
+                URL="https://((cachix-cache)).cachix.org/$OUTPATH_HASH.narinfo"
+                echo "Probing $URL"
+                curl -f $URL > /dev/null
+      - task: build-nd-nopush-presentcache
+        image: nix-build-task-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: nd-nopush-presentcache
+              path: output
+          params:
+            NIXFILE: nix-build-task-git/tests/other.nix
+            ATTR: deliberatelyNonDeterministic
+            BUILD_ARGSTR_someArg: ((.:run-random))
+            CACHIX_CACHE: ((cachix-cache))
+          run:
+            path: /bin/build
+      - task: check-cached-output-used
+        image: busybox-image
+        config:
+          platform: linux
+          inputs:
+            - name: nd-emptycache
+            - name: nd-nopush-presentcache
+          run:
+            path: /bin/ash
+            args:
+              - -e
+              - -c
+              - |
+                # if the cache was used, even the nondeterministic output should be
+                # identical
+                if ! diff -ru nd-emptycache nd-nopush-presentcache ; then
+                  echo "Expected outputs to be identical"
+                  exit 7
+                fi
 
   - name: bump-sources
     serial: true

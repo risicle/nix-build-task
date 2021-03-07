@@ -2,6 +2,7 @@
   pkgs ? import (import ../nix/sources.nix).nixpkgs {}
   , readmeExt ? ".md"
   , includeTarball ? true
+  , someArg ? "default"
   , ...
 }:
 
@@ -20,9 +21,12 @@ rec {
     ] ++ pkgs.lib.optional includeTarball {name = "linux_1_0.tar.gz"; path = linux_1_0;}
   );
   skopeo = pkgs.skopeo;
-  deliberatelyNonDeterministic = pkgs.runCommand "deliberately-non-deterministic" {} ''
+  deliberatelyNonDeterministic = pkgs.runCommand "deliberately-non-deterministic" {
+    inherit someArg;
+  } ''
     mkdir -p $out
-    touch $out/$RANDOM
+    echo $someArg > $out/arg
+    echo $RANDOM > $out/value
   '';
   multiOut = pkgs.runCommand "multi-out-foo" {
     outputs = [ "out" "foo" "bar" "baz" ];
