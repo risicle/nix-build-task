@@ -72,10 +72,44 @@ def _handle_result_build(result_index, result_line, output_dir_path):
     else:
         shutil.copy(src_path, result_path, follow_symlinks=True)
 
-
-def _handle_result_evaldrv(result_index, result_line, output_dir_path):
-    with open(output_dir_path / ("result" + ("" if result_index == 0 else f"-{result_index+1}")), "w") as f:
+    with open(str(result_path) + ".outpath", "w") as f:
         f.write(result_line)
+
+
+def _handle_result_evaloutpaths(result_index, result_line, output_dir_path):
+    print(
+        f"nix-build-task: determining outpath for drv {result_line!r}",
+        file=sys.stderr,
+    )
+    split_result_line = result_line.split("!")
+    store_result = subprocess.run(
+        ("nix-store", "--query", "--outputs", split_result_line[0],),
+        stdout=subprocess.PIPE,
+        text=True,
+        check=True,
+    )
+
+    outpaths = tuple(x for x in store_result.stdout.splitlines() if x)
+    if len(outpaths) == 1:
+        outpath = outpaths[0]
+    elif len(split_result_line) > 1:
+        # choosing the longest matching line in case root derivation name happens to
+        # end in `-{out name}` too
+        outpath = max(
+            (op for op in outpaths if op.endswith(f"-{split_result_line[-1]}")),
+            key=lambda op: len(op),
+        )
+    else:
+        # choosing the shortest matching line as it's presumably the default out
+        outpath = min(outpaths, key=lambda op: len(op))
+
+    with open(
+        output_dir_path / (
+            "result" + ("" if result_index == 0 else f"-{result_index+1}") + ".outpath"
+        ),
+        "w",
+    ) as f:
+        f.write(outpath)
 
 
 _sigs_offsets = {
@@ -300,10 +334,10 @@ def _init_cachix():
 if __name__ == "__main__":
     _normalize_args()
 
-    if len(sys.argv) >= 2 and sys.argv[1] == "eval-drv":
+    if len(sys.argv) >= 2 and sys.argv[1] == "eval-outpaths":
         nix_command_stem = ("nix-instantiate",)
         nix_command_display = "nix-instantiate"
-        handle_result_func = _handle_result_evaldrv
+        handle_result_func = _handle_result_evaloutpaths
         post_output_hook = _nop_func
     else:
         cachix_prefix = _init_cachix()

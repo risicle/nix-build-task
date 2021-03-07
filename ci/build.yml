@@ -215,9 +215,12 @@ jobs:
           outputs:
             - name: linux-dirs
               path: output0
+            - name: multi-out-baz
+              path: output1
           params:
             NIXFILE: nix-build-task-git/tests/other.nix
             ATTR0: linux-dir
+            ATTR1: multiOut.baz
           run:
             path: /bin/build
       - task: check-dirs
@@ -226,6 +229,7 @@ jobs:
           platform: linux
           inputs:
             - name: linux-dirs
+            - name: multi-out-baz
           run:
             path: /bin/ash
             args:
@@ -242,6 +246,7 @@ jobs:
 
                 stat linux-dirs/result/README.md
                 stat linux-dirs/result/linux_1_0.tar.gz
+                stat multi-out-baz/result
       - try:
           task: fail-to-unpack-non-image
           image: nix-build-task-dockerhub
@@ -381,6 +386,150 @@ jobs:
                   exit 7
                 fi
 
+  - name: test-eval-outpaths
+    serial: true
+    plan:
+      - in_parallel:
+        - get: nix-build-task-dockerhub
+        - get: nix-build-task-git
+          passed: [bootstrap-image]
+      - task: eval-busybox-image
+        image: nix-build-task-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: busybox-outpath
+              path: output
+          params:
+            NIXFILE: nix-build-task-git/tests/images.nix
+            ATTR: literally-just-busybox
+          run:
+            path: /bin/build
+            args:
+              - eval-outpaths
+      - task: build-busybox-image
+        image: nix-build-task-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: busybox-image
+              path: output
+          params:
+            NIXFILE: nix-build-task-git/tests/images.nix
+            ATTR: literally-just-busybox
+            OUTPUT_PREPARE_IMAGE: unpack
+          run:
+            path: /bin/build
+      - task: compare-outpaths
+        image: busybox-image
+        config:
+          platform: linux
+          inputs:
+            - name: busybox-image
+            - name: busybox-outpath
+          run:
+            path: /bin/ash
+            args:
+              - -e
+              - -c
+              - |
+                diff -u busybox-image/result.outpath busybox-outpath/result.outpath
+                echo "No difference detected"
+      - task: eval-multi-out
+        image: nix-build-task-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: multi-out-outpath
+              path: output
+            - name: multi-out-baz-outpath
+              path: output1
+            - name: multi-out-foo-outpath
+              path: output2
+          params:
+            NIXFILE: nix-build-task-git/tests/other.nix
+            ATTR0: multiOut
+            ATTR1: multiOut.baz
+            ATTR2: multiOut.foo
+            OUTPUT2_PREPARE_IMAGE: unpack  # should have no effect
+          run:
+            path: /bin/build
+            args:
+              - eval-outpaths
+      - task: check-multi-out
+        image: busybox-image
+        config:
+          platform: linux
+          inputs:
+            - name: multi-out-outpath
+            - name: multi-out-baz-outpath
+            - name: multi-out-foo-outpath
+          run:
+            path: /bin/ash
+            args:
+              - -e
+              - -c
+              - |
+                egrep -e '^[^-]+-multi-out-foo$' multi-out-outpath/result.outpath
+                egrep -e '^[^-]+-multi-out-foo-baz$' multi-out-baz-outpath/result.outpath
+                egrep -e '^[^-]+-multi-out-foo-foo$' multi-out-foo-outpath/result.outpath
+      - task: eval-no-args
+        image: nix-build-task-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: linux-dir-no-args
+              path: output
+          params:
+            NIXFILE: nix-build-task-git/tests/other.nix
+            ATTR0: linux-dir
+          run:
+            path: /bin/build
+            args:
+              - eval-outpaths
+      - task: eval-args-buz
+        image: nix-build-task-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: linux-dir-args-buz
+              path: output
+          params:
+            NIXFILE: nix-build-task-git/tests/other.nix
+            ATTR0: linux-dir
+            BUILD_ARGSTR_readmeExt: buz
+          run:
+            path: /bin/build
+            args:
+              - eval-outpaths
+      - task: check-args-results
+        image: busybox-image
+        config:
+          platform: linux
+          inputs:
+            - name: linux-dir-no-args
+            - name: linux-dir-args-buz
+          run:
+            path: /bin/ash
+            args:
+              - -e
+              - -c
+              - |
+                if diff -u linux-dir-no-args/result.outpath linux-dir-args-buz/result.outpath ; then
+                  echo "Expected outputs linux-dir-no-args and linux-dir-args-buz to be different"
+                  exit 7
+                fi
+
   - name: test-cachix
     serial: true
     plan:
@@ -451,7 +600,7 @@ jobs:
                 pushd nix-build-task-git-bumped
                 bump-sources 2>&1 | tee .bump-sources-output
                 popd
-      - task: eval-orig-drv
+      - task: eval-orig-outpaths
         config:
           platform: linux
           image_resource:
@@ -461,7 +610,7 @@ jobs:
           inputs:
             - name: nix-build-task-git
           outputs:
-            - name: orig-drv
+            - name: orig-outpaths
               path: output
           params:
             NIXFILE: nix-build-task-git/
@@ -469,8 +618,8 @@ jobs:
           run:
             path: /bin/build
             args:
-              - eval-drv
-      - task: eval-bumped-drv
+              - eval-outpaths
+      - task: eval-bumped-outpaths
         config:
           platform: linux
           image_resource:
@@ -480,7 +629,7 @@ jobs:
           inputs:
             - name: nix-build-task-git-bumped
           outputs:
-            - name: bumped-drv
+            - name: bumped-outpaths
               path: output
           params:
             NIXFILE: nix-build-task-git-bumped/
@@ -488,7 +637,7 @@ jobs:
           run:
             path: /bin/build
             args:
-              - eval-drv
+              - eval-outpaths
       - try:
           task: compare-and-commit
           image: bump-sources-image
@@ -497,8 +646,8 @@ jobs:
             inputs:
               - name: nix-build-task-git
               - name: nix-build-task-git-bumped
-              - name: orig-drv
-              - name: bumped-drv
+              - name: orig-outpaths
+              - name: bumped-outpaths
             outputs:
               - name: nix-build-task-git-bumped
             run:
@@ -507,7 +656,7 @@ jobs:
                 - -e
                 - -c
                 - |
-                  if diff -ru orig-drv bumped-drv ; then
+                  if diff -ru orig-outpaths bumped-outpaths ; then
                     echo "No difference detected"
                     exit 7
                   fi
