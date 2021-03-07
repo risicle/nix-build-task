@@ -24,4 +24,12 @@ rec {
     mkdir -p $out
     touch $out/$RANDOM
   '';
+  multiOut = pkgs.runCommand "multi-out-foo" {
+    outputs = [ "out" "foo" "bar" "baz" ];
+  } ''
+    mkdir -p $foo
+    touch $bar
+    mkdir -p $baz
+    mkdir -p $out
+  '';
 }
