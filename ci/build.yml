@@ -554,6 +554,23 @@ jobs:
             CACHIX_SIGNING_KEY: ((cachix-signing-key))
           run:
             path: /bin/build
+      - task: generate-run-random
+        image: busybox-image
+        config:
+          platform: linux
+          outputs:
+            - name: run-random-output
+          run:
+            path: /bin/ash
+            args:
+              - -e
+              - -c
+              - |
+                hexdump -e '/1 "%02x"' -n 8 /dev/random > run-random-output/value
+      - load_var: run-random
+        file: run-random-output/value
+        format: trim
+        reveal: true
 
   - name: bump-sources
     serial: true
