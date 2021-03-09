@@ -22,7 +22,7 @@ rec {
   );
   skopeo = pkgs.skopeo;
   deliberatelyNonDeterministic = pkgs.runCommand "deliberately-non-deterministic" {
-    inherit someArg
+    inherit someArg;
   } ''
     mkdir -p $out
     echo $someArg > $out/arg

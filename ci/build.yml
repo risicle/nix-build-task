@@ -592,7 +592,7 @@ jobs:
           params:
             NIXFILE: nix-build-task-git/tests/other.nix
             ATTR: linux-dir
-            BUILD_ARGSTR_readmeExt: .((run-random)).md
+            BUILD_ARGSTR_readmeExt: .((.:run-random)).md
             CACHIX_CACHE: ((cachix-cache))
           run:
             path: /bin/build
