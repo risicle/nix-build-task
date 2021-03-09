@@ -57,12 +57,19 @@ jobs:
             - name: nix-build-task-git
           outputs:
             - name: output
+          params:
+            CACHIX_SIGNING_KEY: ((cachix-signing-key))
           run:
             path: /bin/ash
             args:
               - -e
               - -c
               - |
+                CACHIX=$(nix-build '<nixpkgs>' -A cachix)/bin/cachix
+
+                # using but not pushing to cache from stage-0
+                $CACHIX use ((cachix-cache))
+
                 nix-channel --add https://nixos.org/channels/nixos-20.09 nixpkgs
                 nix-channel --update
                 SKOPEO=$(nix-build '<nixpkgs>' -A skopeo)/bin/skopeo
@@ -91,6 +98,8 @@ jobs:
             NIXFILE: nix-build-task-git
             ATTR0: image
             OUTPUT0_PREPARE_IMAGE: 1
+            CACHIX_CACHE: ((cachix-cache))
+            CACHIX_SIGNING_KEY: ((cachix-signing-key))
           run:
             path: /bin/build
 
