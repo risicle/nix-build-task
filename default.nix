@@ -45,7 +45,10 @@ in rec {
   # would get in the way of our use of the stdout to read build outputs
   cachix_stderr = pkgs.cachix.overrideAttrs (oldAttrs: {
     patchPhase = oldAttrs.patchPhase + ''
-      find ./ -type f -exec sed -i -e 's|putText|putErrText|g' {} \;
+      find ./ -type f -exec sed -i \
+        -e 's|\bputText\b|putErrText|g' \
+        -e 's|\bputStr\b|hPutStr stderr|g' \
+        {} \;
     '';
   });
   bumpSources = pkgs.writeScript "bump-sources" ''
