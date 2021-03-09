@@ -580,35 +580,70 @@ jobs:
         file: run-random-output/value
         format: trim
         reveal: true
-      - task: build-linux-dir-nopush-emptycache
+      - task: build-nd-nopush-emptycache
         image: nix-build-task-dockerhub
         config:
           platform: linux
           inputs:
             - name: nix-build-task-git
           outputs:
-            - name: linux-dir-nopush-emptycache
+            - name: nd-nopush-emptycache
               path: output
           params:
             NIXFILE: nix-build-task-git/tests/other.nix
-            ATTR: linux-dir
-            BUILD_ARGSTR_readmeExt: .((.:run-random)).md
+            ATTR: deliberatelyNonDeterministic
+            BUILD_ARGSTR_someArg: ((.:run-random))
             CACHIX_CACHE: ((cachix-cache))
           run:
             path: /bin/build
-      - task: check-cache
+      - task: check-cache-empty
         image: busybox-image
         config:
           platform: linux
           inputs:
-            - name: linux-dir-outpath
+            - name: nd-nopush-emptycache
           run:
             path: /bin/ash
             args:
               - -e
               - -c
               - |
-                curl
+                OUTPATH_HASH=$(egrep -o '\b[a-z0-9]{32}\b' nd-nopush-emptycache/result.outpath)
+                if curl -f "https://((cachix-cache)).cachix.org/$OUTPATH_HASH.narinfo" || [ $? != 22 ] ; then
+                  echo "Expected to get 404 when checking cache"
+                  exit 7
+                fi
+      - task: build-nd-emptycache
+        image: nix-build-task-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: nd-emptycache
+              path: output
+          params:
+            NIXFILE: nix-build-task-git/tests/other.nix
+            ATTR: deliberatelyNonDeterministic
+            BUILD_ARGSTR_someArg: ((.:run-random))
+            CACHIX_CACHE: ((cachix-cache))
+            CACHIX_SIGNING_KEY: ((cachix-signing-key))
+          run:
+            path: /bin/build
+      - task: check-cache-present
+        image: busybox-image
+        config:
+          platform: linux
+          inputs:
+            - name: nd-emptycache
+          run:
+            path: /bin/ash
+            args:
+              - -e
+              - -c
+              - |
+                OUTPATH_HASH=$(egrep -o '\b[a-z0-9]{32}\b' nd-emptycache/result.outpath)
+                curl -f "https://((cachix-cache)).cachix.org/$OUTPATH_HASH.narinfo" > /dev/null
 
   - name: bump-sources
     serial: true
