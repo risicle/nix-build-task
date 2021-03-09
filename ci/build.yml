@@ -548,7 +548,7 @@ jobs:
               path: output
           params:
             NIXFILE: nix-build-task-git/tests/images.nix
-            ATTR: literally-just-busybox
+            ATTR: busybox-with-curl
             OUTPUT_PREPARE_IMAGE: unpack
             CACHIX_CACHE: ((cachix-cache))
             CACHIX_SIGNING_KEY: ((cachix-signing-key))
@@ -571,6 +571,35 @@ jobs:
         file: run-random-output/value
         format: trim
         reveal: true
+      - task: build-linux-dir-nopush-emptycache
+        image: nix-build-task-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: linux-dir-nopush-emptycache
+              path: output
+          params:
+            NIXFILE: nix-build-task-git/tests/other.nix
+            ATTR: linux-dir
+            BUILD_ARGSTR_readmeExt: .((run-random)).md
+            CACHIX_CACHE: ((cachix-cache))
+          run:
+            path: /bin/build
+      - task: check-cache
+        image: busybox-image
+        config:
+          platform: linux
+          inputs:
+            - name: linux-dir-outpath
+          run:
+            path: /bin/ash
+            args:
+              - -e
+              - -c
+              - |
+                curl
 
   - name: bump-sources
     serial: true

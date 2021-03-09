@@ -43,4 +43,18 @@ rec {
     name = "literally-just-busybox";
     contents = pkgs.busybox;
   };
+  busybox-with-curl = pkgs.dockerTools.buildImage (literally-just-busybox.buildArgs // {
+    name = "busybox-and-curl";
+    contents = pkgs.symlinkJoin {
+      name = "contents";
+      paths = [
+        literally-just-busybox.buildArgs.contents
+        pkgs.curl
+        pkgs.cacert
+      ];
+    };
+    config.Env = [
+      "NIX_SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+    ];
+  });
 }
