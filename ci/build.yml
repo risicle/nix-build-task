@@ -679,7 +679,7 @@ jobs:
               - |
                 # if the cache was used, even the nondeterministic output should be
                 # identical
-                if diff -ru nd-emptycache nd-nopush-presentcache ; then
+                if ! diff -ru nd-emptycache nd-nopush-presentcache ; then
                   echo "Expected outputs to be identical"
                   exit 7
                 fi
