@@ -609,7 +609,9 @@ jobs:
               - -c
               - |
                 OUTPATH_HASH=$(egrep -o '\b[a-z0-9]{32}\b' nd-nopush-emptycache/result.outpath)
-                if curl -f "https://((cachix-cache)).cachix.org/$OUTPATH_HASH.narinfo" || [ $? != 22 ] ; then
+                URL="https://((cachix-cache)).cachix.org/$OUTPATH_HASH.narinfo"
+                echo "Probing $URL"
+                if curl -f $URL || [ $? != 22 ] ; then
                   echo "Expected to get 404 when checking cache"
                   exit 7
                 fi
@@ -643,7 +645,44 @@ jobs:
               - -c
               - |
                 OUTPATH_HASH=$(egrep -o '\b[a-z0-9]{32}\b' nd-emptycache/result.outpath)
-                curl -f "https://((cachix-cache)).cachix.org/$OUTPATH_HASH.narinfo" > /dev/null
+                URL="https://((cachix-cache)).cachix.org/$OUTPATH_HASH.narinfo"
+                echo "Probing $URL"
+                curl -f $URL > /dev/null
+      - task: build-nd-nopush-presentcache
+        image: nix-build-task-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: nd-nopush-presentcache
+              path: output
+          params:
+            NIXFILE: nix-build-task-git/tests/other.nix
+            ATTR: deliberatelyNonDeterministic
+            BUILD_ARGSTR_someArg: ((.:run-random))
+            CACHIX_CACHE: ((cachix-cache))
+          run:
+            path: /bin/build
+      - task: check-cached-output-used
+        image: busybox-image
+        config:
+          platform: linux
+          inputs:
+            - name: nd-emptycache
+            - name: nd-nopush-presentcache
+          run:
+            path: /bin/ash
+            args:
+              - -e
+              - -c
+              - |
+                # if the cache was used, even the nondeterministic output should be
+                # identical
+                if diff -ru nd-emptycache nd-nopush-presentcache ; then
+                  echo "Expected outputs to be identical"
+                  exit 7
+                fi
 
   - name: bump-sources
     serial: true
