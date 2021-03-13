@@ -3,6 +3,7 @@ import itertools
 import json
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -248,6 +249,11 @@ def _post_output_hook_build(attr_index, output_dir_path):
 _nop_func = lambda *args, **kwargs: None
 
 
+def _attr_match_number(candidate):
+    m = re.fullmatch(r"ATTR(\d+)", candidate)
+    return (m or 0) and int(m.group(1))
+
+
 def _main(nix_command_stem, nix_command_display, handle_result_func, post_output_hook):
     arg_args = tuple(itertools.chain.from_iterable(
         ("--arg", k, v,)
@@ -303,6 +309,16 @@ def _main(nix_command_stem, nix_command_display, handle_result_func, post_output
                     handle_result_func(result_index, result_line, output_dir_path)
 
             post_output_hook(attr_index, output_dir_path)
+
+    unreached_attr_keys = sorted(
+        k for k in os.environ.keys() if _attr_match_number(k) > attr_index
+    )
+    if unreached_attr_keys:
+        print(
+            f"nix-build-task: warning: ignoring params {', '.join(unreached_attr_keys)}: "
+            f"evaluation stopped when ATTR{attr_index+1} was not found",
+            file=sys.stderr,
+        )
 
 
 def _init_cachix():

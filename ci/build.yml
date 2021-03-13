@@ -230,6 +230,7 @@ jobs:
             NIXFILE: nix-build-task-git/tests/other.nix
             ATTR0: linux-dir
             ATTR1: multiOut.baz
+            ATTR44: doesntExist  # should be ignored but generate warning
           run:
             path: /bin/build
       - task: check-dirs
