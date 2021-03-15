@@ -329,7 +329,8 @@ def _init_cachix():
     command_prefix = ()
 
     if cachix_conf:
-        d = pathlib.Path(".config/cachix").mkdir(parents=True)
+        d = pathlib.Path(".config/cachix")
+        d.mkdir(parents=True)
         (d / "cachix.dhall").symlink_to(cachix_conf)
 
     if cachix_cache:
