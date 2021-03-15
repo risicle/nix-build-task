@@ -329,7 +329,9 @@ def _init_cachix():
     command_prefix = ()
 
     if cachix_conf:
-        pathlib.Path("cachix.dhall").symlink_to(cachix_conf)
+        d = pathlib.Path(".config/cachix")
+        d.mkdir(parents=True)
+        (d / "cachix.dhall").symlink_to(pathlib.Path("../..") / cachix_conf)
 
     if cachix_cache:
         print(
@@ -348,6 +350,7 @@ def _init_cachix():
 
 
 if __name__ == "__main__":
+    os.environ["HOME"] = os.getcwd()
     _normalize_args()
 
     if len(sys.argv) >= 2 and sys.argv[1] == "eval-outpaths":
