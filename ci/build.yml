@@ -665,25 +665,6 @@ jobs:
             CACHIX_CACHE: ((cachix-cache))
           run:
             path: /bin/build
-      - task: check-nopush-cached-output-used
-        image: busybox-image
-        config:
-          platform: linux
-          inputs:
-            - name: nd-emptycache
-            - name: nd-nopush-presentcache
-          run:
-            path: /bin/ash
-            args:
-              - -e
-              - -c
-              - |
-                # if the cache was used, even the nondeterministic output should be
-                # identical
-                if ! diff -ru nd-emptycache nd-nopush-presentcache ; then
-                  echo "Expected outputs to be identical"
-                  exit 7
-                fi
       - task: build-nd-presentcache
         image: nix-build-task-dockerhub
         config:
@@ -701,21 +682,26 @@ jobs:
             CACHIX_SIGNING_KEY: ((cachix-signing-key))
           run:
             path: /bin/build
-      - task: check-cached-output-used
+      - task: check-cached-outputs-used
         image: busybox-image
         config:
           platform: linux
           inputs:
             - name: nd-emptycache
+            - name: nd-nopush-presentcache
             - name: nd-presentcache
           run:
             path: /bin/ash
             args:
-              - -e
+              - -eu
               - -c
               - |
                 # if the cache was used, even the nondeterministic output should be
                 # identical
+                if ! diff -ru nd-emptycache nd-nopush-presentcache ; then
+                  echo "Expected outputs to be identical"
+                  exit 7
+                fi
                 if ! diff -ru nd-emptycache nd-presentcache ; then
                   echo "Expected outputs to be identical"
                   exit 7
