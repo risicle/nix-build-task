@@ -706,6 +706,7 @@ jobs:
                   echo "Expected nd-emptycache, nd-presentcache outputs to be identical"
                   exit 7
                 fi
+                env
       - task: cachix-dhall-to-file
         image: busybox-image
         config:
