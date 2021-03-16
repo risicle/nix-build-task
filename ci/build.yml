@@ -761,7 +761,7 @@ jobs:
         config:
           platform: linux
           inputs:
-            - name: nd-emptycache
+            - name: nd-dhall-emptycache
             - name: nd-dhall-nopush-presentcache
           run:
             path: /bin/ash
@@ -771,8 +771,8 @@ jobs:
               - |
                 # if the cache was used, even the nondeterministic output should be
                 # identical
-                if ! diff -ru nd-emptycache nd-dhall-nopush-presentcache ; then
-                  echo "Expected nd-emptycache, nd-dhall-nopush-presentcache outputs to be identical"
+                if ! diff -ru nd-dhall-emptycache nd-dhall-nopush-presentcache ; then
+                  echo "Expected nd-dhall-emptycache, nd-dhall-nopush-presentcache outputs to be identical"
                   exit 7
                 fi
 
