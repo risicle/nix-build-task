@@ -331,7 +331,7 @@ def _init_cachix():
     if cachix_conf:
         d = pathlib.Path(".config/cachix")
         d.mkdir(parents=True)
-        (d / "cachix.dhall").symlink_to(cachix_conf)
+        (d / "cachix.dhall").symlink_to(pathlib.Path("../..") / cachix_conf)
 
     if cachix_cache:
         print(
