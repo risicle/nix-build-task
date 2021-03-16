@@ -11,6 +11,9 @@ import tarfile
 import tempfile
 
 
+_false_strs = ("0", "false",)
+
+
 def _get_env_vars_with_prefix(prefix):
     return {
         k[len(prefix):]: v
@@ -208,7 +211,7 @@ def _image_unpack(image_type, image_tar_path):
 
 def _post_output_hook_build(attr_index, output_dir_path):
     prepare_image = os.environ.get(f"OUTPUT{attr_index}_PREPARE_IMAGE")
-    if prepare_image and prepare_image != "0":
+    if prepare_image and prepare_image.lower() not in _false_strs:
         print(
             f"nix-build-task: preparing image for {output_dir_path}",
             file=sys.stderr,
