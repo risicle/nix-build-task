@@ -581,6 +581,22 @@ jobs:
         file: run-random-output/value
         format: trim
         reveal: true
+      - task: build-nd-nokey-emptycache
+        image: nix-build-task-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: nd-nokey-emptycache
+              path: output
+          params:
+            NIXFILE: nix-build-task-git/tests/other.nix
+            ATTR: deliberatelyNonDeterministic
+            BUILD_ARGSTR_someArg: ((.:run-random))
+            CACHIX_CACHE: ((cachix-cache))
+          run:
+            path: /bin/build
       - task: build-nd-nopush-emptycache
         image: nix-build-task-dockerhub
         config:
@@ -595,6 +611,8 @@ jobs:
             ATTR: deliberatelyNonDeterministic
             BUILD_ARGSTR_someArg: ((.:run-random))
             CACHIX_CACHE: ((cachix-cache))
+            CACHIX_SIGNING_KEY: ((cachix-signing-key))
+            CACHIX_PUSH: no  # yaml false
           run:
             path: /bin/build
       - task: check-cache-empty
@@ -649,14 +667,14 @@ jobs:
                 URL="https://((cachix-cache)).cachix.org/$OUTPATH_HASH.narinfo"
                 echo "Probing $URL"
                 curl -f $URL > /dev/null
-      - task: build-nd-nopush-presentcache
+      - task: build-nd-nokey-presentcache
         image: nix-build-task-dockerhub
         config:
           platform: linux
           inputs:
             - name: nix-build-task-git
           outputs:
-            - name: nd-nopush-presentcache
+            - name: nd-nokey-presentcache
               path: output
           params:
             NIXFILE: nix-build-task-git/tests/other.nix
@@ -688,7 +706,7 @@ jobs:
           platform: linux
           inputs:
             - name: nd-emptycache
-            - name: nd-nopush-presentcache
+            - name: nd-nokey-presentcache
             - name: nd-presentcache
           run:
             path: /bin/ash
@@ -698,8 +716,8 @@ jobs:
               - |
                 # if the cache was used, even the nondeterministic output should be
                 # identical
-                if ! diff -ru nd-emptycache nd-nopush-presentcache ; then
-                  echo "Expected nd-emptycache, nd-nopush-presentcache outputs to be identical"
+                if ! diff -ru nd-emptycache nd-nokey-presentcache ; then
+                  echo "Expected nd-emptycache, nd-nokey-presentcache outputs to be identical"
                   exit 7
                 fi
                 if ! diff -ru nd-emptycache nd-presentcache ; then
@@ -740,14 +758,14 @@ jobs:
             CACHIX_CONF: cachix-conf/cachix.dhall
           run:
             path: /bin/build
-      - task: build-nd-dhall-nopush-presentcache
+      - task: build-nd-dhall-nokey-presentcache
         image: nix-build-task-dockerhub
         config:
           platform: linux
           inputs:
             - name: nix-build-task-git
           outputs:
-            - name: nd-dhall-nopush-presentcache
+            - name: nd-dhall-nokey-presentcache
               path: output
           params:
             NIXFILE: nix-build-task-git/tests/other.nix
@@ -762,7 +780,7 @@ jobs:
           platform: linux
           inputs:
             - name: nd-dhall-emptycache
-            - name: nd-dhall-nopush-presentcache
+            - name: nd-dhall-nokey-presentcache
           run:
             path: /bin/ash
             args:
@@ -771,8 +789,8 @@ jobs:
               - |
                 # if the cache was used, even the nondeterministic output should be
                 # identical
-                if ! diff -ru nd-dhall-emptycache nd-dhall-nopush-presentcache ; then
-                  echo "Expected nd-dhall-emptycache, nd-dhall-nopush-presentcache outputs to be identical"
+                if ! diff -ru nd-dhall-emptycache nd-dhall-nokey-presentcache ; then
+                  echo "Expected nd-dhall-emptycache, nd-dhall-nokey-presentcache outputs to be identical"
                   exit 7
                 fi
 

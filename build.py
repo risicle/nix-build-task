@@ -211,7 +211,7 @@ def _image_unpack(image_type, image_tar_path):
 
 def _post_output_hook_build(attr_index, output_dir_path):
     prepare_image = os.environ.get(f"OUTPUT{attr_index}_PREPARE_IMAGE")
-    if prepare_image and prepare_image not in _false_strs:
+    if prepare_image and prepare_image.lower() not in _false_strs:
         print(
             f"nix-build-task: preparing image for {output_dir_path}",
             file=sys.stderr,
@@ -328,6 +328,8 @@ def _init_cachix():
     cachix_cache = os.environ.get("CACHIX_CACHE")
     cachix_conf = os.environ.get("CACHIX_CONF")
     cachix_signing_key = os.environ.get("CACHIX_SIGNING_KEY")
+    cachix_auth_token = os.environ.get("CACHIX_AUTH_TOKEN")
+    cachix_push = os.environ.get("CACHIX_PUSH")
 
     command_prefix = ()
 
@@ -346,7 +348,12 @@ def _init_cachix():
             check=True,
         )
 
-        if cachix_conf or cachix_signing_key:
+        if not cachix_push:
+            cachix_push = str(bool(
+                cachix_conf or cachix_signing_key or cachix_auth_token
+            ))
+
+        if cachix_push.lower() not in _false_strs:
             command_prefix = ("cachix", "watch-exec", cachix_cache, "--",)
 
     return command_prefix
