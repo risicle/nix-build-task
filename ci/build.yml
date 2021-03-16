@@ -713,7 +713,7 @@ jobs:
           platform: linux
           outputs:
             - name: cachix-conf
-          para:
+          params:
             CACHIX_DHALL: ((cachix-dhall))
           run:
             path: /bin/ash
