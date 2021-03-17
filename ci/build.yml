@@ -343,11 +343,30 @@ jobs:
           platform: linux
           inputs:
             - name: nix-build-task-git
+          outputs:
+            - name: logs-out
           params:
             NIXFILE: nix-build-task-git/tests/other.nix
             ATTR: deliberatelyNonDeterministic
+            NIX_LOG_DIR: logs-out/
           run:
             path: /bin/build
+      - task: check-non-deterministic-logs
+        image: busybox-image
+        config:
+          platform: linux
+          inputs:
+            - name: logs-out
+          run:
+            path: /bin/ash
+            args:
+              - -e
+              - -c
+              - |
+                for f in $(find logs-out -name '*.bz2') ; do
+                  bunzip2 -c $f >> all_logs
+                done
+                egrep 'Building something slightly random' all_logs
       - try:
           task: build-non-deterministic-enforce-option
           image: nix-build-task-dockerhub

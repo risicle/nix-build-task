@@ -84,6 +84,9 @@ entry point to call in the `run.path`.
   inferred from whether `CACHIX_CONF`, `CACHIX_SIGNING_KEY` or `CACHIX_AUTH_TOKEN` is
   present, but setting a falsey value here can be used to explicitly disable cachix
   pushing.
+- `NIX_LOG_DIR`: if this is set to a relative path, `nix-build-task` will simply
+  interpret is as relative to the build directory and make it absolute, passing it
+  through to `nix-build`. This allows build logs to be sent to an output directory.
 
 Not explicitly handled by `nix-build-task`, but just happen to work by virtue of being
 passed as environment variables:
