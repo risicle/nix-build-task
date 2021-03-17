@@ -64,7 +64,7 @@ entry point to call in the `run.path`.
 - `ATTR0` ... `ATTR<n>`: attributes to build. `result`s will be copied to `output0` ...
   `output<n>`. `ATTR` is an alias of `ATTR0` and `output` is used for results if
   `output0` is not found.
-- `OUTPUT0_PREPARE_IMAGE` ... `OUTPUT<n>_PREPARE_IMAGE`: set to a non-empty, non-`0`
+- `OUTPUT0_PREPARE_IMAGE` ... `OUTPUT<n>_PREPARE_IMAGE`: set to a non-empty, non-falsey
   value, will cause the result from the respective output to be prepared as a container
   image to be used by e.g. concourse's `registry-image` resource. Set to the value
   `unpack`, will go a step further and prepare the image for immediate use as a concourse
@@ -80,11 +80,16 @@ entry point to call in the `run.path`.
   prebuilt binaries from and, if `CACHIX_CONF` or `CACHIX_SIGNING_KEY` are set, attempt
   to push to.
 - `CACHIX_CONF`: path to a `cachix.dhall` file with credentials for cachix cache.
+- `CACHIX_PUSH`: whether to push build results to `CACHIX_CACHE`. Usually this is
+  inferred from whether `CACHIX_CONF`, `CACHIX_SIGNING_KEY` or `CACHIX_AUTH_TOKEN` is
+  present, but setting a falsey value here can be used to explicitly disable cachix
+  pushing.
 
 Not explicitly handled by `nix-build-task`, but just happen to work by virtue of being
 passed as environment variables:
 
 - `CACHIX_SIGNING_KEY`: key for signing packages being pushed to `CACHIX_CACHE`.
+- `CACHIX_AUTH_TOKEN`: auth token for `CACHIX_CACHE`..
 - `NIX_CONF_DIR`: can be used to point at your own supplied `nix.conf` for overriding
   many nix options at once. If you're going to do this, note that the `CACHIX_CACHE`
   parameter will put its settings in `/etc/nix/nix.conf` and if you want this to still
