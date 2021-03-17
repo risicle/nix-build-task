@@ -328,6 +328,8 @@ def _init_cachix():
     cachix_cache = os.environ.get("CACHIX_CACHE")
     cachix_conf = os.environ.get("CACHIX_CONF")
     cachix_signing_key = os.environ.get("CACHIX_SIGNING_KEY")
+    cachix_auth_token = os.environ.get("CACHIX_AUTH_TOKEN")
+    cachix_push = os.environ.get("CACHIX_PUSH")
 
     command_prefix = ()
 
@@ -346,7 +348,12 @@ def _init_cachix():
             check=True,
         )
 
-        if cachix_conf or cachix_signing_key:
+        if not cachix_push:
+            cachix_push = str(bool(
+                cachix_conf or cachix_signing_key or cachix_auth_token
+            ))
+
+        if cachix_push.lower() not in _false_strs:
             command_prefix = ("cachix", "watch-exec", cachix_cache, "--",)
 
     return command_prefix
