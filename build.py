@@ -35,6 +35,8 @@ def _get_nix_options():
 
 
 def _normalize_args():
+    os.environ["HOME"] = os.getcwd()
+
     if os.environ.get("ATTR") and os.environ.get("ATTR0"):
         print(
             "nix-build-task: error: conflict: both $ATTR and $ATTR0 set",
@@ -65,6 +67,11 @@ def _normalize_args():
             file=sys.stderr,
         )
         sys.exit(5)
+
+    if os.environ.get("NIX_LOG_DIR"):
+        nix_log_dir = pathlib.Path(os.environ["NIX_LOG_DIR"])
+        if not nix_log_dir.is_absolute():
+            os.environ["NIX_LOG_DIR"] = str(nix_log_dir.resolve())
 
 
 def _handle_result_build(result_index, result_line, output_dir_path):
@@ -360,7 +367,6 @@ def _init_cachix():
 
 
 if __name__ == "__main__":
-    os.environ["HOME"] = os.getcwd()
     _normalize_args()
 
     if len(sys.argv) >= 2 and sys.argv[1] == "eval-outpaths":

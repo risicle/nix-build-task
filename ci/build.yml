@@ -343,11 +343,27 @@ jobs:
           platform: linux
           inputs:
             - name: nix-build-task-git
+          outputs:
+            - name: logs-out
           params:
             NIXFILE: nix-build-task-git/tests/other.nix
             ATTR: deliberatelyNonDeterministic
+            NIX_LOG_DIR: logs-out/
           run:
             path: /bin/build
+      - task: check-non-deterministic-logs
+        image: busybox-image
+        config:
+          platform: linux
+          inputs:
+            - name: logs-out
+          run:
+            path: /bin/ash
+            args:
+              - -e
+              - -c
+              - |
+                find logs-out
       - try:
           task: build-non-deterministic-enforce-option
           image: nix-build-task-dockerhub

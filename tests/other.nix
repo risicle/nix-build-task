@@ -27,6 +27,7 @@ rec {
     mkdir -p $out
     echo $someArg > $out/arg
     echo $RANDOM > $out/value
+    echo Building something slightly random: arg=$someArg value=$(cat $out/value)
   '';
   multiOut = pkgs.runCommand "multi-out-foo" {
     outputs = [ "out" "foo" "bar" "baz" ];
