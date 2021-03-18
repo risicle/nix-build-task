@@ -363,7 +363,10 @@ jobs:
               - -e
               - -c
               - |
-                find logs-out
+                for f in $(find logs-out -name '*.bz2') ; do
+                  bunzip2 -c $f >> all_logs
+                done
+                egrep 'Building something slightly random' all_logs
       - try:
           task: build-non-deterministic-enforce-option
           image: nix-build-task-dockerhub
