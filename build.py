@@ -332,6 +332,22 @@ def _main(nix_command_stem, nix_command_display, handle_result_func, post_output
         )
 
 
+def _cachix_push_output_hook(attr_index, output_dir_path):
+    cachix_cache = os.environ["CACHIX_CACHE"]
+    print(
+        f"nix-build-task: pushing results for {output_dir_path} to cachix",
+        file=sys.stderr,
+    )
+    for result_outpath_fn in output_dir_path.glob("result*.outpath"):
+        with open(result_outpath_fn, "r") as f:
+            outpath = f.read().strip()
+
+        subprocess.run(
+            ("cachix", "push", cachix_cache, outpath),
+            check=True,
+        )
+
+
 def _init_cachix():
     cachix_cache = os.environ.get("CACHIX_CACHE")
     cachix_conf = os.environ.get("CACHIX_CONF")
@@ -340,6 +356,7 @@ def _init_cachix():
     cachix_push = os.environ.get("CACHIX_PUSH")
 
     command_prefix = ()
+    post_output_hooks = ()
 
     if cachix_conf:
         d = pathlib.Path(".config/cachix")
@@ -361,10 +378,12 @@ def _init_cachix():
                 cachix_conf or cachix_signing_key or cachix_auth_token
             ))
 
-        if cachix_push.lower() not in _false_strs:
+        if cachix_push.lower() == "outputs":
+            post_output_hooks = (_cachix_push_output_hook,)
+        elif cachix_push.lower() not in _false_strs:
             command_prefix = ("cachix", "watch-exec", cachix_cache, "--",)
 
-    return command_prefix
+    return command_prefix, post_output_hooks
 
 
 if __name__ == "__main__":
@@ -376,10 +395,10 @@ if __name__ == "__main__":
         handle_result_func = _handle_result_evaloutpaths
         post_output_hooks = ()
     else:
-        cachix_prefix = _init_cachix()
+        cachix_prefix, cachix_hooks = _init_cachix()
         nix_command_stem = cachix_prefix + ("nix-build",)
         nix_command_display = "nix-build"
         handle_result_func = _handle_result_build
-        post_output_hooks = (_post_output_hook_build,)
+        post_output_hooks = (_post_output_hook_build,) + tuple(cachix_hooks)
 
     _main(nix_command_stem, nix_command_display, handle_result_func, post_output_hooks)
