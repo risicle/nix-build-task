@@ -259,15 +259,12 @@ def _post_output_hook_build(attr_index, output_dir_path):
             _image_unpack(image_type, image_tar_path)
 
 
-_nop_func = lambda *args, **kwargs: None
-
-
 def _attr_match_number(candidate):
     m = re.fullmatch(r"ATTR(\d+)", candidate)
     return (m or 0) and int(m.group(1))
 
 
-def _main(nix_command_stem, nix_command_display, handle_result_func, post_output_hook):
+def _main(nix_command_stem, nix_command_display, handle_result_func, post_output_hooks):
     arg_args = tuple(itertools.chain.from_iterable(
         ("--arg", k, v,)
         for k, v in _get_build_args().items()
@@ -321,7 +318,8 @@ def _main(nix_command_stem, nix_command_display, handle_result_func, post_output
                 if result_line:
                     handle_result_func(result_index, result_line, output_dir_path)
 
-            post_output_hook(attr_index, output_dir_path)
+            for hook in post_output_hooks:
+                hook(attr_index, output_dir_path)
 
     unreached_attr_keys = sorted(
         k for k in os.environ.keys() if _attr_match_number(k) > attr_index
@@ -376,12 +374,12 @@ if __name__ == "__main__":
         nix_command_stem = ("nix-instantiate",)
         nix_command_display = "nix-instantiate"
         handle_result_func = _handle_result_evaloutpaths
-        post_output_hook = _nop_func
+        post_output_hooks = ()
     else:
         cachix_prefix = _init_cachix()
         nix_command_stem = cachix_prefix + ("nix-build",)
         nix_command_display = "nix-build"
         handle_result_func = _handle_result_build
-        post_output_hook = _post_output_hook_build
+        post_output_hooks = (_post_output_hook_build,)
 
-    _main(nix_command_stem, nix_command_display, handle_result_func, post_output_hook)
+    _main(nix_command_stem, nix_command_display, handle_result_func, post_output_hooks)
