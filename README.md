@@ -80,10 +80,15 @@ entry point to call in the `run.path`.
   prebuilt binaries from and, if `CACHIX_CONF` or `CACHIX_SIGNING_KEY` are set, attempt
   to push to.
 - `CACHIX_CONF`: path to a `cachix.dhall` file with credentials for cachix cache.
-- `CACHIX_PUSH`: whether to push build results to `CACHIX_CACHE`. Usually this is
-  inferred from whether `CACHIX_CONF`, `CACHIX_SIGNING_KEY` or `CACHIX_AUTH_TOKEN` is
-  present, but setting a falsey value here can be used to explicitly disable cachix
-  pushing.
+- `CACHIX_PUSH`: explicitly control whether to push build results to `CACHIX_CACHE`.
+  - Truthy values will enable pushing all built packages to cachix. This is the implied
+    default when any of the `CACHIX_CONF`, `CACHIX_SIGNING_KEY` or `CACHIX_AUTH_TOKEN`
+    params are set.
+  - Falsey values will disable pushing to cachix.
+  - The special value `outputs` will cause only the actual output packages and their
+    *runtime* dependencies to be pushed to cachix. This may be useful either to conserve
+    cache space or for people paranoid about pushing secrets that may be contained in
+    intermediate build products.
 - `NIX_LOG_DIR`: if this is set to a relative path, `nix-build-task` will simply
   interpret is as relative to the build directory and make it absolute, passing it
   through to `nix-build`. This allows build logs to be sent to an output directory.
