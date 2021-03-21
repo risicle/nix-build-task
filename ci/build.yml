@@ -694,10 +694,13 @@ jobs:
             - name: nix-build-task-git
           outputs:
             - name: nd-nokey-presentcache
-              path: output
+              path: output0
+            - name: ndbtd-nokey-presentcache
+              path: output1
           params:
             NIXFILE: nix-build-task-git/tests/other.nix
             ATTR: deliberatelyNonDeterministic
+            ATTR1: deliberatelyNonDeterministicBTD
             BUILD_ARGSTR_someArg: ((.:run-random))
             CACHIX_CACHE: ((cachix-cache))
           run:
@@ -726,6 +729,7 @@ jobs:
           inputs:
             - name: nd-emptycache
             - name: nd-nokey-presentcache
+            - name: ndbtd-nokey-presentcache
             - name: nd-presentcache
           run:
             path: /bin/ash
@@ -734,7 +738,8 @@ jobs:
               - -c
               - |
                 # if the cache was used, even the nondeterministic output should be
-                # identical
+                # identical (including the flattened link to the nondeterministic
+                # runtime dependency)
                 if ! diff -ru nd-emptycache nd-nokey-presentcache ; then
                   echo "Expected nd-emptycache, nd-nokey-presentcache outputs to be identical"
                   exit 7
@@ -743,7 +748,12 @@ jobs:
                   echo "Expected nd-emptycache, nd-presentcache outputs to be identical"
                   exit 7
                 fi
-                env
+                # if the cache had *all* built derivations pushed to it, the snapshot
+                # of the buildtime dependency should be the same as the re-"built" one
+                if ! diff -ru nd-emptycache/result/build-time-dep ndbtd-nokey-presentcache/result ; then
+                  echo "Expected nd-emptycache/result/build-time-dep, ndbtd-nokey-presentcache/result to be identical"
+                  exit 7
+                fi
       - task: cachix-dhall-to-file
         image: busybox-image
         config:
@@ -786,9 +796,12 @@ jobs:
           outputs:
             - name: nd-dhall-nokey-presentcache
               path: output
+            - name: ndbtd-dhall-nokey-presentcache
+              path: output1
           params:
             NIXFILE: nix-build-task-git/tests/other.nix
             ATTR: deliberatelyNonDeterministic
+            ATTR1: deliberatelyNonDeterministicBTD
             BUILD_ARGSTR_someArg: ((.:run-random))-dhall
             CACHIX_CACHE: ((cachix-cache))
           run:
@@ -800,6 +813,7 @@ jobs:
           inputs:
             - name: nd-dhall-emptycache
             - name: nd-dhall-nokey-presentcache
+            - name: ndbtd-dhall-nokey-presentcache
           run:
             path: /bin/ash
             args:
@@ -807,9 +821,80 @@ jobs:
               - -c
               - |
                 # if the cache was used, even the nondeterministic output should be
-                # identical
+                # identical (including the flattened link to the nondeterministic
+                # runtime dependency)
                 if ! diff -ru nd-dhall-emptycache nd-dhall-nokey-presentcache ; then
                   echo "Expected nd-dhall-emptycache, nd-dhall-nokey-presentcache outputs to be identical"
+                  exit 7
+                fi
+                # if the cache had *all* built derivations pushed to it, the snapshot
+                # of the buildtime dependency should be the same as the re-"built" one
+                if ! diff -ru nd-dhall-emptycache/result/build-time-dep ndbtd-dhall-nokey-presentcache/result ; then
+                  echo "Expected nd-dhall-emptycache/result/build-time-dep, ndbtd-dhall-nokey-presentcache/result to be identical"
+                  exit 7
+                fi
+      - task: build-nd-pushoutputs-emptycache
+        image: nix-build-task-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: nd-pushoutputs-emptycache
+              path: output
+          params:
+            NIXFILE: nix-build-task-git/tests/other.nix
+            ATTR0: deliberatelyNonDeterministic
+            BUILD_ARGSTR_someArg: ((.:run-random))-pushoutputs
+            CACHIX_CACHE: ((cachix-cache))
+            CACHIX_SIGNING_KEY: ((cachix-signing-key))
+            CACHIX_PUSH: outputs
+          run:
+            path: /bin/build
+      - task: build-nd-pushoutputs-nokey-presentcache
+        image: nix-build-task-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: nd-pushoutputs-nokey-presentcache
+              path: output
+            - name: ndbtd-pushoutputs-nokey-presentcache
+              path: output1
+          params:
+            NIXFILE: nix-build-task-git/tests/other.nix
+            ATTR0: deliberatelyNonDeterministic
+            ATTR1: deliberatelyNonDeterministicBTD
+            BUILD_ARGSTR_someArg: ((.:run-random))-pushoutputs
+            CACHIX_CACHE: ((cachix-cache))
+          run:
+            path: /bin/build
+      - task: check-cached-outputs-used-pushoutputs
+        image: busybox-image
+        config:
+          platform: linux
+          inputs:
+            - name: nd-pushoutputs-emptycache
+            - name: nd-pushoutputs-nokey-presentcache
+            - name: ndbtd-pushoutputs-nokey-presentcache
+          run:
+            path: /bin/ash
+            args:
+              - -e
+              - -c
+              - |
+                # if the cache was used, even the nondeterministic output should be
+                # identical (including the flattened link to the nondeterministic
+                # runtime dependency)
+                if ! diff -ru nd-pushoutputs-emptycache nd-pushoutputs-nokey-presentcache ; then
+                  echo "Expected nd-pushoutputs-emptycache, nd-pushoutputs-nokey-presentcache outputs to be identical"
+                  exit 7
+                fi
+                # if the cache had *all* built derivations pushed to it, the snapshot
+                # of the buildtime dependency would be the same as the re-"built" one
+                if diff -ru nd-pushoutputs-emptycache/result/build-time-dep ndbtd-pushoutputs-nokey-presentcache/result ; then
+                  echo "Expected nd-pushoutputs-emptycache/result/build-time-dep, ndbtd-pushoutputs-nokey-presentcache/result to different, but appeared to be identical"
                   exit 7
                 fi
 

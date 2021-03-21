@@ -5,8 +5,18 @@
   , someArg ? "default"
   , ...
 }:
-
-rec {
+let
+  mkNonDeterministicDrv = arg: runTimeDep: buildTimeDep: pkgs.runCommand "deliberately-non-deterministic" {
+    inherit arg runTimeDep buildTimeDep;
+  } ''
+    mkdir -p $out
+    echo $arg > $out/arg
+    echo $RANDOM > $out/value
+    [ -n "$runTimeDep" ] && ln -s $runTimeDep $out/run-time-dep
+    [ -n "$buildTimeDep" ] && cp -rL $buildTimeDep $out/build-time-dep
+    echo Building something slightly random: arg=$arg value=$(cat $out/value) runTimeDep=$runTimeDep buildTimeDep=$buildTimeDep
+  '';
+in rec {
   linux_1_0 = pkgs.fetchurl {
     url = "https://kernel.org/pub/linux/kernel/v1.0/linux-1.0.tar.gz";
     sha256 = "00hqn0mdf3097f69zib8q6la8i8f1qaf6hxp7r46mnx3d7mc6k01";
@@ -21,14 +31,9 @@ rec {
     ] ++ pkgs.lib.optional includeTarball {name = "linux_1_0.tar.gz"; path = linux_1_0;}
   );
   skopeo = pkgs.skopeo;
-  deliberatelyNonDeterministic = pkgs.runCommand "deliberately-non-deterministic" {
-    inherit someArg;
-  } ''
-    mkdir -p $out
-    echo $someArg > $out/arg
-    echo $RANDOM > $out/value
-    echo Building something slightly random: arg=$someArg value=$(cat $out/value)
-  '';
+  deliberatelyNonDeterministicBTD = mkNonDeterministicDrv "${someArg}-btd" "" "";
+  deliberatelyNonDeterministicRTD = mkNonDeterministicDrv "${someArg}-rtd" "" "";
+  deliberatelyNonDeterministic = mkNonDeterministicDrv someArg deliberatelyNonDeterministicRTD deliberatelyNonDeterministicBTD;
   multiOut = pkgs.runCommand "multi-out-foo" {
     outputs = [ "out" "foo" "bar" "baz" ];
   } ''
