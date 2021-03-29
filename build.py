@@ -377,9 +377,7 @@ def _init_cachix():
     post_output_hooks = ()
 
     if cachix_conf:
-        d = pathlib.Path(".config/cachix")
-        d.mkdir(parents=True)
-        (d / "cachix.dhall").symlink_to(pathlib.Path("../..") / cachix_conf)
+        cachix_extra_args = cachix_extra_args + ("-c", cachix_conf,)
 
     if cachix_cache:
         print(
