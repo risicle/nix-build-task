@@ -89,6 +89,7 @@ entry point to call in the `run.path`.
     *runtime* dependencies to be pushed to cachix. This may be useful either to conserve
     cache space or for people paranoid about pushing secrets that may be contained in
     intermediate build products.
+- `CACHIX_PUSH_EXTRA_ARGS`: extra arguments to supply to cachix push commands.
 - `NIX_LOG_DIR`: if this is set to a relative path, `nix-build-task` will simply
   interpret is as relative to the build directory and make it absolute, passing it
   through to `nix-build`. This allows build logs to be sent to an output directory.
