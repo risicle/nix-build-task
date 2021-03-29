@@ -4,6 +4,7 @@ import json
 import os
 import pathlib
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -332,6 +333,10 @@ def _main(nix_command_stem, nix_command_display, handle_result_func, post_output
         )
 
 
+def _get_cachix_push_extra_args():
+    return tuple(shlex.split(os.environ.get("CACHIX_PUSH_EXTRA_ARGS", "")))
+
+
 def _cachix_push_output_hook(attr_index, output_dir_path):
     cachix_cache = os.environ["CACHIX_CACHE"]
     print(
@@ -343,7 +348,13 @@ def _cachix_push_output_hook(attr_index, output_dir_path):
             outpath = f.read().strip()
 
         subprocess.run(
-            ("cachix", "push", cachix_cache, outpath),
+            (
+                "cachix",
+                "push",
+            ) + _get_cachix_push_extra_args() + (
+                cachix_cache,
+                outpath,
+            ),
             check=True,
         )
 
@@ -381,7 +392,13 @@ def _init_cachix():
         if cachix_push.lower() == "outputs":
             post_output_hooks = (_cachix_push_output_hook,)
         elif cachix_push.lower() not in _false_strs:
-            command_prefix = ("cachix", "watch-exec", cachix_cache, "--",)
+            command_prefix = (
+                "cachix",
+                "watch-exec",
+            ) + _get_cachix_push_extra_args() + (
+                cachix_cache,
+                "--",
+            )
 
     return command_prefix, post_output_hooks
 
