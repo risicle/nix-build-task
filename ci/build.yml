@@ -897,6 +897,40 @@ jobs:
                   echo "Expected nd-pushoutputs-emptycache/result/build-time-dep, ndbtd-pushoutputs-nokey-presentcache/result to different, but appeared to be identical"
                   exit 7
                 fi
+      - task: build-nd-pushomdrv-emptycache
+        image: nix-build-task-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: nd-pushomdrv-emptycache
+              path: output
+          params:
+            NIXFILE: nix-build-task-git/tests/other.nix
+            ATTR0: deliberatelyNonDeterministic
+            BUILD_ARGSTR_someArg: ((.:run-random))-pushomdrv
+            CACHIX_CACHE: ((cachix-cache))
+            CACHIX_SIGNING_KEY: ((cachix-signing-key))
+            CACHIX_PUSH_EXTRA_ARGS: --omit-deriver -c 1
+          run:
+            path: /bin/build
+      - task: check-nd-pushomdrv-cache-no-deriver
+        image: busybox-image
+        config:
+          platform: linux
+          inputs:
+            - name: nd-pushomdrv-emptycache
+          run:
+            path: /bin/ash
+            args:
+              - -e
+              - -c
+              - |
+                OUTPATH_HASH=$(egrep -o '\b[a-z0-9]{32}\b' nd-pushomdrv-emptycache/result.outpath)
+                URL="https://((cachix-cache)).cachix.org/$OUTPATH_HASH.narinfo"
+                echo "Probing $URL"
+                curl -f $URL | egrep '^Deriver: unknown-deriver$'
 
   - name: bump-sources
     serial: true
