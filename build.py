@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import functools
 import itertools
 import json
 import os
@@ -333,12 +334,13 @@ def _main(nix_command_stem, nix_command_display, handle_result_func, post_output
         )
 
 
-def _get_cachix_push_extra_args():
-    return tuple(shlex.split(os.environ.get("CACHIX_PUSH_EXTRA_ARGS", "")))
-
-
-def _cachix_push_output_hook(attr_index, output_dir_path):
-    cachix_cache = os.environ["CACHIX_CACHE"]
+def _cachix_push_output_hook(
+    cachix_cache,
+    cachix_extra_args,
+    cachix_push_extra_args,
+    attr_index,
+    output_dir_path,
+):
     print(
         f"nix-build-task: pushing results for {output_dir_path} to cachix",
         file=sys.stderr,
@@ -350,8 +352,9 @@ def _cachix_push_output_hook(attr_index, output_dir_path):
         subprocess.run(
             (
                 "cachix",
+            ) + cachix_extra_args + (
                 "push",
-            ) + _get_cachix_push_extra_args() + (
+            ) + cachix_push_extra_args + (
                 cachix_cache,
                 outpath,
             ),
@@ -365,7 +368,11 @@ def _init_cachix():
     cachix_signing_key = os.environ.get("CACHIX_SIGNING_KEY")
     cachix_auth_token = os.environ.get("CACHIX_AUTH_TOKEN")
     cachix_push = os.environ.get("CACHIX_PUSH")
+    cachix_push_extra_args = tuple(
+        shlex.split(os.environ.get("CACHIX_PUSH_EXTRA_ARGS", ""))
+    )
 
+    cachix_extra_args = ()
     command_prefix = ()
     post_output_hooks = ()
 
@@ -380,7 +387,12 @@ def _init_cachix():
             file=sys.stderr,
         )
         subprocess.run(
-            ("cachix", "use", cachix_cache,),
+            (
+                "cachix",
+            ) + cachix_extra_args + (
+                "use",
+                cachix_cache,
+            ),
             check=True,
         )
 
@@ -390,12 +402,20 @@ def _init_cachix():
             ))
 
         if cachix_push.lower() == "outputs":
-            post_output_hooks = (_cachix_push_output_hook,)
+            post_output_hooks = post_output_hooks + (
+                functools.partial(
+                    _cachix_push_output_hook,
+                    cachix_cache,
+                    cachix_extra_args,
+                    cachix_push_extra_args,
+                ),
+            )
         elif cachix_push.lower() not in _false_strs:
-            command_prefix = (
+            command_prefix = command_prefix + (
                 "cachix",
+            ) + cachix_extra_args + (
                 "watch-exec",
-            ) + _get_cachix_push_extra_args() + (
+            ) + cachix_push_extra_args + (
                 cachix_cache,
                 "--",
             )
