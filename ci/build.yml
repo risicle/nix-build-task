@@ -20,6 +20,14 @@ resources:
       repository: ((staging-docker-repo))
       username: ((dockerhub-username))
       password: ((dockerhub-password))
+  - name: nix-build-task-final-dockerhub
+    type: registry-image
+    icon: docker
+    source:
+      tag: latest
+      repository: ((final-docker-repo))
+      username: ((dockerhub-username))
+      password: ((dockerhub-password))
   - name: every-friday-night
     type: time
     icon: timer-outline
@@ -947,6 +955,20 @@ jobs:
                 URL="https://((cachix-cache)).cachix.org/$OUTPATH_HASH.narinfo"
                 echo "Probing $URL"
                 curl -f $URL | egrep '^Deriver: unknown-deriver$'
+
+  - name: push-final
+    serial: true
+    plan:
+      - in_parallel:
+        - get: nix-build-task-staging-dockerhub
+          passed: [test-*]
+          trigger: true
+        - get: nix-build-task-git
+          passed: [test-*]
+          trigger: true
+      - put: nix-build-task-final-dockerhub
+        params:
+          image: nix-build-task-staging-dockerhub/image.tar
 
   - name: bump-sources
     serial: true
