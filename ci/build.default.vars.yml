@@ -1,3 +1,4 @@
 working-branch: master
-working-docker-repo: risicle/nix-build-task
+staging-docker-repo: risicle/nix-build-task-staging
+final-docker-repo: risicle/nix-build-task
 bump-sources-branch: bump-sources

@@ -12,12 +12,20 @@ resources:
       uri: git@github.com:risicle/nix-build-task.git
       branch: ((bump-sources-branch))
       private_key: ((github-ssh-key))
-  - name: nix-build-task-dockerhub
+  - name: nix-build-task-staging-dockerhub
     type: registry-image
     icon: docker
     source:
       tag: latest
-      repository: ((working-docker-repo))
+      repository: ((staging-docker-repo))
+      username: ((dockerhub-username))
+      password: ((dockerhub-password))
+  - name: nix-build-task-final-dockerhub
+    type: registry-image
+    icon: docker
+    source:
+      tag: latest
+      repository: ((final-docker-repo))
       username: ((dockerhub-username))
       password: ((dockerhub-password))
   - name: every-friday-night
@@ -39,7 +47,8 @@ jobs:
       file: nix-build-task-git/ci/build.yml
       vars:
         working-branch: ((working-branch))
-        working-docker-repo: ((working-docker-repo))
+        staging-docker-repo: ((staging-docker-repo))
+        final-docker-repo: ((final-docker-repo))
         bump-sources-branch: ((bump-sources-branch))
 
   - name: bootstrap-image
@@ -107,7 +116,7 @@ jobs:
           run:
             path: /bin/build
 
-      - put: nix-build-task-dockerhub
+      - put: nix-build-task-staging-dockerhub
         params:
           image: stage-1-image/image.tar
 
@@ -115,11 +124,14 @@ jobs:
     serial: true
     plan:
       - in_parallel:
-        - get: nix-build-task-dockerhub
+        - get: nix-build-task-staging-dockerhub
+          passed: [bootstrap-image]
+          trigger: true
         - get: nix-build-task-git
           passed: [bootstrap-image]
+          trigger: true
       - task: build-multiple
-        image: nix-build-task-dockerhub
+        image: nix-build-task-staging-dockerhub
         config:
           platform: linux
           inputs:
@@ -152,7 +164,7 @@ jobs:
                 stat hopefully-alpine-image/image.tar
                 cat /etc/alpine-release
       - task: build-separate
-        image: nix-build-task-dockerhub
+        image: nix-build-task-staging-dockerhub
         config:
           platform: linux
           inputs:
@@ -201,11 +213,14 @@ jobs:
     serial: true
     plan:
       - in_parallel:
-        - get: nix-build-task-dockerhub
+        - get: nix-build-task-staging-dockerhub
+          passed: [bootstrap-image]
+          trigger: true
         - get: nix-build-task-git
           passed: [bootstrap-image]
+          trigger: true
       - task: build-busybox-image
-        image: nix-build-task-dockerhub
+        image: nix-build-task-staging-dockerhub
         config:
           platform: linux
           inputs:
@@ -220,7 +235,7 @@ jobs:
           run:
             path: /bin/build
       - task: build-dirs
-        image: nix-build-task-dockerhub
+        image: nix-build-task-staging-dockerhub
         config:
           platform: linux
           inputs:
@@ -263,7 +278,7 @@ jobs:
                 stat multi-out-baz/result
       - try:
           task: fail-to-unpack-non-image
-          image: nix-build-task-dockerhub
+          image: nix-build-task-staging-dockerhub
           config:
             platform: linux
             inputs:
@@ -308,7 +323,7 @@ jobs:
                   exit 7
                 fi
       - task: build-with-args
-        image: nix-build-task-dockerhub
+        image: nix-build-task-staging-dockerhub
         config:
           platform: linux
           inputs:
@@ -342,7 +357,7 @@ jobs:
 
                 stat args-output/result/README.txt
       - task: build-non-deterministic
-        image: nix-build-task-dockerhub
+        image: nix-build-task-staging-dockerhub
         config:
           platform: linux
           inputs:
@@ -373,7 +388,7 @@ jobs:
                 egrep 'Building something slightly random' all_logs
       - try:
           task: build-non-deterministic-enforce-option
-          image: nix-build-task-dockerhub
+          image: nix-build-task-staging-dockerhub
           config:
             platform: linux
             inputs:
@@ -423,11 +438,14 @@ jobs:
     serial: true
     plan:
       - in_parallel:
-        - get: nix-build-task-dockerhub
+        - get: nix-build-task-staging-dockerhub
+          passed: [bootstrap-image]
+          trigger: true
         - get: nix-build-task-git
           passed: [bootstrap-image]
+          trigger: true
       - task: eval-busybox-image
-        image: nix-build-task-dockerhub
+        image: nix-build-task-staging-dockerhub
         config:
           platform: linux
           inputs:
@@ -443,7 +461,7 @@ jobs:
             args:
               - eval-outpaths
       - task: build-busybox-image
-        image: nix-build-task-dockerhub
+        image: nix-build-task-staging-dockerhub
         config:
           platform: linux
           inputs:
@@ -473,7 +491,7 @@ jobs:
                 diff -u busybox-image/result.outpath busybox-outpath/result.outpath
                 echo "No difference detected"
       - task: eval-multi-out
-        image: nix-build-task-dockerhub
+        image: nix-build-task-staging-dockerhub
         config:
           platform: linux
           inputs:
@@ -513,7 +531,7 @@ jobs:
                 egrep -e '^[^-]+-multi-out-foo-baz$' multi-out-baz-outpath/result.outpath
                 egrep -e '^[^-]+-multi-out-foo-foo$' multi-out-foo-outpath/result.outpath
       - task: eval-no-args
-        image: nix-build-task-dockerhub
+        image: nix-build-task-staging-dockerhub
         config:
           platform: linux
           inputs:
@@ -529,7 +547,7 @@ jobs:
             args:
               - eval-outpaths
       - task: eval-args-buz
-        image: nix-build-task-dockerhub
+        image: nix-build-task-staging-dockerhub
         config:
           platform: linux
           inputs:
@@ -567,11 +585,14 @@ jobs:
     serial: true
     plan:
       - in_parallel:
-        - get: nix-build-task-dockerhub
+        - get: nix-build-task-staging-dockerhub
+          passed: [bootstrap-image]
+          trigger: true
         - get: nix-build-task-git
           passed: [bootstrap-image]
+          trigger: true
       - task: build-busybox-image
-        image: nix-build-task-dockerhub
+        image: nix-build-task-staging-dockerhub
         config:
           platform: linux
           inputs:
@@ -605,7 +626,7 @@ jobs:
         format: trim
         reveal: true
       - task: build-nd-nokey-emptycache
-        image: nix-build-task-dockerhub
+        image: nix-build-task-staging-dockerhub
         config:
           platform: linux
           inputs:
@@ -621,7 +642,7 @@ jobs:
           run:
             path: /bin/build
       - task: build-nd-nopush-emptycache
-        image: nix-build-task-dockerhub
+        image: nix-build-task-staging-dockerhub
         config:
           platform: linux
           inputs:
@@ -658,7 +679,7 @@ jobs:
                   exit 7
                 fi
       - task: build-nd-emptycache
-        image: nix-build-task-dockerhub
+        image: nix-build-task-staging-dockerhub
         config:
           platform: linux
           inputs:
@@ -691,7 +712,7 @@ jobs:
                 echo "Probing $URL"
                 curl -f $URL > /dev/null
       - task: build-nd-nokey-presentcache
-        image: nix-build-task-dockerhub
+        image: nix-build-task-staging-dockerhub
         config:
           platform: linux
           inputs:
@@ -710,7 +731,7 @@ jobs:
           run:
             path: /bin/build
       - task: build-nd-presentcache
-        image: nix-build-task-dockerhub
+        image: nix-build-task-staging-dockerhub
         config:
           platform: linux
           inputs:
@@ -774,7 +795,7 @@ jobs:
               - |
                 echo "$CACHIX_DHALL" > cachix-conf/cachix.dhall
       - task: build-nd-dhall-emptycache
-        image: nix-build-task-dockerhub
+        image: nix-build-task-staging-dockerhub
         config:
           platform: linux
           inputs:
@@ -792,7 +813,7 @@ jobs:
           run:
             path: /bin/build
       - task: build-nd-dhall-nokey-presentcache
-        image: nix-build-task-dockerhub
+        image: nix-build-task-staging-dockerhub
         config:
           platform: linux
           inputs:
@@ -838,7 +859,7 @@ jobs:
                   exit 7
                 fi
       - task: build-nd-pushoutputs-emptycache
-        image: nix-build-task-dockerhub
+        image: nix-build-task-staging-dockerhub
         config:
           platform: linux
           inputs:
@@ -856,7 +877,7 @@ jobs:
           run:
             path: /bin/build
       - task: build-nd-pushoutputs-nokey-presentcache
-        image: nix-build-task-dockerhub
+        image: nix-build-task-staging-dockerhub
         config:
           platform: linux
           inputs:
@@ -902,7 +923,7 @@ jobs:
                   exit 7
                 fi
       - task: build-nd-pushomdrv-emptycache
-        image: nix-build-task-dockerhub
+        image: nix-build-task-staging-dockerhub
         config:
           platform: linux
           inputs:
@@ -935,6 +956,30 @@ jobs:
                 URL="https://((cachix-cache)).cachix.org/$OUTPATH_HASH.narinfo"
                 echo "Probing $URL"
                 curl -f $URL | egrep '^Deriver: unknown-deriver$'
+
+  - name: push-final
+    serial: true
+    plan:
+      - in_parallel:
+        - get: nix-build-task-staging-dockerhub
+          passed:
+            - test-build-images
+            - test-build-other
+            - test-cachix
+            - test-eval-outpaths
+          trigger: true
+          params:
+            format: oci
+        - get: nix-build-task-git
+          passed:
+            - test-build-images
+            - test-build-other
+            - test-cachix
+            - test-eval-outpaths
+          trigger: true
+      - put: nix-build-task-final-dockerhub
+        params:
+          image: nix-build-task-staging-dockerhub/image.tar
 
   - name: bump-sources
     serial: true
