@@ -1,17 +1,20 @@
 resources:
   - name: nix-build-task-git
     type: git
+    icon: git
     source:
       uri: https://github.com/risicle/nix-build-task.git
       branch: ((working-branch))
   - name: nix-build-task-git-bump-sources-branch
     type: git
+    icon: git
     source:
       uri: git@github.com:risicle/nix-build-task.git
       branch: ((bump-sources-branch))
       private_key: ((github-ssh-key))
   - name: nix-build-task-dockerhub
     type: registry-image
+    icon: docker
     source:
       tag: latest
       repository: ((working-docker-repo))
@@ -19,6 +22,7 @@ resources:
       password: ((dockerhub-password))
   - name: every-friday-night
     type: time
+    icon: timer-outline
     source:
       location: Europe/London
       start: 23:00
