@@ -48,6 +48,7 @@ jobs:
       vars:
         working-branch: ((working-branch))
         staging-docker-repo: ((staging-docker-repo))
+        final-docker-repo: ((final-docker-repo))
         bump-sources-branch: ((bump-sources-branch))
 
   - name: bootstrap-image
