@@ -968,7 +968,7 @@ jobs:
             - test-cachix
             - test-eval-outpaths
           trigger: true
-          source:
+          params:
             format: oci
         - get: nix-build-task-git
           passed:
