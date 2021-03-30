@@ -962,17 +962,17 @@ jobs:
       - in_parallel:
         - get: nix-build-task-staging-dockerhub
           passed:
+            - test-build-images
+            - test-build-other
             - test-cachix
-            - test-images
-            - test-other
-            - test-outpaths
+            - test-eval-outpaths
           trigger: true
         - get: nix-build-task-git
           passed:
+            - test-build-images
+            - test-build-other
             - test-cachix
-            - test-images
-            - test-other
-            - test-outpaths
+            - test-eval-outpaths
           trigger: true
       - put: nix-build-task-final-dockerhub
         params:
