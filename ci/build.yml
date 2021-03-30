@@ -961,10 +961,18 @@ jobs:
     plan:
       - in_parallel:
         - get: nix-build-task-staging-dockerhub
-          passed: [test-*]
+          passed:
+            - test-cachix
+            - test-images
+            - test-other
+            - test-outpaths
           trigger: true
         - get: nix-build-task-git
-          passed: [test-*]
+          passed:
+            - test-cachix
+            - test-images
+            - test-other
+            - test-outpaths
           trigger: true
       - put: nix-build-task-final-dockerhub
         params:
