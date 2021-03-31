@@ -295,7 +295,7 @@ def _post_output_hook_build(attr_index, output_dir_path):
             )
 
             outpaths = tuple(sorted(
-                x for x in (ofn.strip() for ofn in result_outpath_fns.splitlines())
+                x for x in (ofn.strip() for ofn in result_outpath_fns.stdout.splitlines())
                 if x
             ))
 
