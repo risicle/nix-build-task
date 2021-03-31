@@ -433,6 +433,36 @@ jobs:
                   echo "Expected non-deterministic-output/failure-recorded to have been created by record-determinism-failure"
                   exit 7
                 fi
+      - task: build-with-nar-export
+        image: nix-build-task-staging-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: nd-nar
+              path: output
+          params:
+            NIXFILE: nix-build-task-git/tests/other.nix
+            ATTR: deliberatelyNonDeterministic
+            OUTPUT_EXPORT_NAR: true
+          run:
+            path: /bin/build
+      - task: build-with-nar-export-runtime-closure
+        image: nix-build-task-staging-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: nd-nar-runtime-closure
+              path: output
+          params:
+            NIXFILE: nix-build-task-git/tests/other.nix
+            ATTR: deliberatelyNonDeterministic
+            OUTPUT_EXPORT_NAR: runtime-closure
+          run:
+            path: /bin/build
 
   - name: test-eval-outpaths
     serial: true
