@@ -463,7 +463,7 @@ jobs:
             OUTPUT_EXPORT_NAR: runtime-closure
           run:
             path: /bin/build
-      - task: check-determinism-failure
+      - task: check-nars
         image: busybox-image
         config:
           platform: linux
@@ -480,6 +480,24 @@ jobs:
                   echo "Expected nd-nar-runtime-closure/result.nar to be larger than nd-nar/result.nar"
                   exit 7
                 fi
+
+                if strings nd-nar/result.nar | grep -F 'contained-default-rtd-contained' ; then
+                  echo "Expected contents of runtime dependency not to be included in nd-nar/result.nar"
+                  exit 8
+                fi
+                if ! strings nd-nar-runtime-closure/result.nar | grep -F 'contained-default-rtd-contained' ; then
+                  echo "Expected contents of runtime dependency to be included in nd-nar-runtime-closure/result.nar"
+                  exit 9
+                fi
+
+                for f in nd-nar/result.nar nd-nar-runtime-closure/result.nar ; do
+                  NAR_HEAD=$(head -c 13 $f)
+                  if [ "$NAR_HEAD" != "nix-archive-1" ] ; then
+                    echo "Expected $f to begin with 'nix-archive-1', instead was '$NAR_HEAD'"
+                    exit 10
+                  fi
+                done
+                
 
   - name: test-eval-outpaths
     serial: true
