@@ -491,7 +491,7 @@ jobs:
                 fi
 
                 for f in nd-nar/result.nar nd-nar-runtime-closure/result.nar ; do
-                  NAR_HEAD=$(head -c 13 $f)
+                  NAR_HEAD=$(strings $f | head -n 1)
                   if [ "$NAR_HEAD" != "nix-archive-1" ] ; then
                     echo "Expected $f to begin with 'nix-archive-1', instead was '$NAR_HEAD'"
                     exit 10
