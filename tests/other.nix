@@ -12,6 +12,7 @@ let
     mkdir -p $out
     echo $arg > $out/arg
     echo $RANDOM > $out/value
+    echo contained-${arg}-contained > $out/arg-contained
     [ -n "$runTimeDep" ] && ln -s $runTimeDep $out/run-time-dep
     [ -n "$buildTimeDep" ] && cp -rL $buildTimeDep $out/build-time-dep
     echo Building something slightly random: arg=$arg value=$(cat $out/value) runTimeDep=$runTimeDep buildTimeDep=$buildTimeDep

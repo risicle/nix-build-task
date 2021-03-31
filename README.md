@@ -70,6 +70,10 @@ entry point to call in the `run.path`.
   `unpack`, will go a step further and prepare the image for immediate use as a concourse
   task image, equivalent to `oci-build-task`'s `UNPACK_ROOTFS` option.
   `OUTPUT_PREPARE_IMAGE` is an alias of `OUTPUT0_PREPARE_IMAGE`.
+- `OUTPUT0_EXPORT_NAR` ... `OUTPUT<n>_EXPORT_NAR`: set to a non-empty, non-falsey value,
+  will cause the results from the respective output to be exported from the nix store
+  as a single `result.nar` file. Set to the value `runtime-closure`, will include the
+  full runtime closure of the results.
 - `BUILD_ARG_<argname>`: passed to `nix-build`'s `--arg` option, specifying an argument
   to be passed to be nix expression in `NIXFILE`. Value interpreted as a nix expression.
 - `BUILD_ARGSTR_<argname>`: passed to `nix-build`'s `--argstr` option, specifying an

@@ -433,6 +433,70 @@ jobs:
                   echo "Expected non-deterministic-output/failure-recorded to have been created by record-determinism-failure"
                   exit 7
                 fi
+      - task: build-with-nar-export
+        image: nix-build-task-staging-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: nd-nar
+              path: output
+          params:
+            NIXFILE: nix-build-task-git/tests/other.nix
+            ATTR: deliberatelyNonDeterministic
+            OUTPUT_EXPORT_NAR: true
+          run:
+            path: /bin/build
+      - task: build-with-nar-export-runtime-closure
+        image: nix-build-task-staging-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: nd-nar-runtime-closure
+              path: output
+          params:
+            NIXFILE: nix-build-task-git/tests/other.nix
+            ATTR: deliberatelyNonDeterministic
+            OUTPUT_EXPORT_NAR: runtime-closure
+          run:
+            path: /bin/build
+      - task: check-nars
+        image: busybox-image
+        config:
+          platform: linux
+          inputs:
+            - name: nd-nar
+            - name: nd-nar-runtime-closure
+          run:
+            path: /bin/ash
+            args:
+              - -e
+              - -c
+              - |
+                if [ "$(stat -c '%s' nd-nar/result.nar)" -ge "$(stat -c '%s' nd-nar-runtime-closure/result.nar)" ] ; then
+                  echo "Expected nd-nar-runtime-closure/result.nar to be larger than nd-nar/result.nar"
+                  exit 7
+                fi
+
+                if strings nd-nar/result.nar | grep -F 'contained-default-rtd-contained' ; then
+                  echo "Expected contents of runtime dependency not to be included in nd-nar/result.nar"
+                  exit 8
+                fi
+                if ! strings nd-nar-runtime-closure/result.nar | grep -F 'contained-default-rtd-contained' ; then
+                  echo "Expected contents of runtime dependency to be included in nd-nar-runtime-closure/result.nar"
+                  exit 9
+                fi
+
+                for f in nd-nar/result.nar nd-nar-runtime-closure/result.nar ; do
+                  NAR_HEAD=$(strings $f | head -n 1)
+                  if [ "$NAR_HEAD" != "nix-archive-1" ] ; then
+                    echo "Expected first string of $f to be 'nix-archive-1', instead was '$NAR_HEAD'"
+                    exit 10
+                  fi
+                done
 
   - name: test-eval-outpaths
     serial: true

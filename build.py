@@ -59,6 +59,16 @@ def _normalize_args():
     if os.environ.get("OUTPUT_PREPARE_IMAGE"):
         os.environ["OUTPUT0_PREPARE_IMAGE"] = os.environ["OUTPUT_PREPARE_IMAGE"]
 
+    if os.environ.get("OUTPUT_EXPORT_NAR") and os.environ.get("OUTPUT0_EXPORT_NAR"):
+        print(
+            "nix-build-task: error: conflict: both $OUTPUT_EXPORT_NAR and $OUTPUT0_EXPORT_NAR set",
+            file=sys.stderr,
+        )
+        sys.exit(5)
+
+    if os.environ.get("OUTPUT_EXPORT_NAR"):
+        os.environ["OUTPUT0_EXPORT_NAR"] = os.environ["OUTPUT_EXPORT_NAR"]
+
     os.environ["NIXFILE"] = os.environ.get("NIXFILE") or "."
 
     arg_conflicts = _get_build_args().keys() & _get_build_argstrs().keys()
@@ -259,6 +269,47 @@ def _post_output_hook_build(attr_index, output_dir_path):
                 }, f)
 
             _image_unpack(image_type, image_tar_path)
+
+    export_nar = os.environ.get(f"OUTPUT{attr_index}_EXPORT_NAR")
+    if export_nar and export_nar.lower() not in _false_strs:
+        print(
+            f"nix-build-task: exporting nar for {output_dir_path}",
+            file=sys.stderr,
+        )
+        outpaths = tuple(sorted(
+            outpath_file.read_text().strip()
+            for outpath_file in output_dir_path.glob("*.outpath")
+        ))
+
+        if export_nar.lower() == "runtime-closure":
+            print(
+                "nix-build-task: calculating runtime closure of results in"
+                f" {output_dir_path}",
+                file=sys.stderr,
+            )
+            result_outpath_fns = subprocess.run(
+                ("nix-store", "-qR",) + outpaths,
+                stdout=subprocess.PIPE,
+                text=True,
+                check=True,
+            )
+
+            outpaths = tuple(sorted(
+                x for x in (ofn.strip() for ofn in result_outpath_fns.stdout.splitlines())
+                if x
+            ))
+
+        nar_path = output_dir_path / "result.nar"
+        with open(nar_path, "wb") as fout:
+            print(
+                f"nix-build-task: exporting {nar_path}",
+                file=sys.stderr,
+            )
+            subprocess.run(
+                ("nix-store", "--export",) + outpaths,
+                stdout=fout,
+                check=True,
+            )
 
 
 def _attr_match_number(candidate):
