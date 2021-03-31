@@ -15,6 +15,10 @@ pipelines.
   to be avoided.
 - Outpath evaluation mode, making it possible to detect when changes will actually
   result in a different build output without performing the build.
+- **No** `privileged` requirement. You _could_ run it with `privileged: true` if
+  you wanted extra guarantees that the results didn't have any undeclared dependencies
+  (see https://github.com/NixOS/docker#limitations for more information on this),
+  but this is a fairly niche requirement, needed for building badly behaved software.
 
 ## Operation
 
