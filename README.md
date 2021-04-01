@@ -80,14 +80,14 @@ entry point to call in the `run.path`.
   full runtime closure of the results. `OUTPUT_EXPORT_NAR` is an alias of
   `OUTPUT0_EXPORT_NAR`.
 - `BUILD_ARG_<argname>`: passed to `nix-build`'s `--arg` option, specifying an argument
-  to be passed to be nix expression in `NIXFILE`. Value interpreted as a nix expression.
+  to be passed to the nix expression in `NIXFILE`. Value interpreted as a nix expression.
 - `BUILD_ARGSTR_<argname>`: passed to `nix-build`'s `--argstr` option, specifying an
-  argument to be passed to be nix expression in `NIXFILE`. Value interpreted as a string.
+  argument to be passed to the nix expression in `NIXFILE`. Value interpreted as a string.
 - `NIX_OPTION_<optname>`: passed to `nix-build`'s `--option` argument, allows overriding
   a Nix configuration option.
 - `CACHIX_CACHE`: name of the [Cachix](https://cachix.org/) cache to attempt to pull
-  prebuilt binaries from and, if `CACHIX_CONF` or `CACHIX_SIGNING_KEY` are set, attempt
-  to push to.
+  prebuilt binaries from and, if `CACHIX_CONF`, `CACHIX_SIGNING_KEY` or
+  `CACHIX_AUTH_TOKEN` are set, attempt to push built binaries to.
 - `CACHIX_CONF`: path to a `cachix.dhall` file with credentials for cachix cache.
 - `CACHIX_PUSH`: explicitly control whether to push build results to `CACHIX_CACHE`.
   - Truthy values will enable pushing all built packages to cachix. This is the implied
