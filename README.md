@@ -31,7 +31,7 @@ or on a local development machine. See the guide on
 [pinning nixpkgs](https://nixos.org/guides/towards-reproducibility-pinning-nixpkgs.html)
 for more detail on how to achieve this.
 
-An basic example task:
+A basic example task:
 
 ```yaml
   - task: build-my-project
