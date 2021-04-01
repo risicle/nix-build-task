@@ -100,16 +100,22 @@ entry point to call in the `run.path`.
     intermediate build products.
 - `CACHIX_PUSH_EXTRA_ARGS`: extra arguments to supply to cachix push commands.
 - `NIX_LOG_DIR`: if this is set to a relative path, `nix-build-task` will simply
-  interpret is as relative to the build directory and make it absolute, passing it
+  interpret it as relative to the build directory and make it absolute, passing it
   through to `nix-build`. This allows build logs to be sent to an output directory.
 
 Not explicitly handled by `nix-build-task`, but just happen to work by virtue of being
 passed as environment variables:
 
 - `CACHIX_SIGNING_KEY`: key for signing packages being pushed to `CACHIX_CACHE`.
-- `CACHIX_AUTH_TOKEN`: auth token for `CACHIX_CACHE`..
+- `CACHIX_AUTH_TOKEN`: auth token for `CACHIX_CACHE`.
 - `NIX_CONF_DIR`: can be used to point at your own supplied `nix.conf` for overriding
   many nix options at once. If you're going to do this, note that the `CACHIX_CACHE`
   parameter will put its settings in `/etc/nix/nix.conf` and if you want this to still
   have an effect you will want to use an `include` line to refer to it or manually
   include your own equivalent settings.
+
+## Examples
+
+Many examples of its use are contained in the testing jobs of the
+[build pipeline](./ci/build.yml). The same pipeline also shows how `nix-build-task` is
+used to build _itself_.
