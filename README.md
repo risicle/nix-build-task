@@ -115,7 +115,7 @@ passed as environment variables:
   include your own equivalent settings.
 - `NIXPKGS_CONFIG`: can be used to point at your own supplied `config.nix`, where
   nixpkgs-specific settings such as `allowUnfree`, `packageOverrides` and
-  `permittedInsecurePackages`. See
+  `permittedInsecurePackages` can be configured. See
   [the nixpkgs manual](https://nixos.org/manual/nixpkgs/stable/#chap-packageconfig)
   for more information on these.
 
