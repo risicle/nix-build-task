@@ -113,6 +113,11 @@ passed as environment variables:
   parameter will put its settings in `/etc/nix/nix.conf` and if you want this to still
   have an effect you will want to use an `include` line to refer to it or manually
   include your own equivalent settings.
+- `NIXPKGS_CONFIG`: can be used to point at your own supplied `config.nix`, where
+  nixpkgs-specific settings such as `allowUnfree`, `packageOverrides` and
+  `permittedInsecurePackages`. See
+  [the nixpkgs manual](https://nixos.org/manual/nixpkgs/stable/#chap-packageconfig)
+  for more information on these.
 
 ## Examples
 
