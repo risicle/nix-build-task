@@ -9,7 +9,7 @@ let
   baseImage_ = if baseImage != null then baseImage else pkgs.dockerTools.pullImage {
     imageName = "nixos/nix";
     imageDigest = "sha256:a6bcef50c7ca82ca66965935a848c8c388beb78c9a5de3e3b3d4ea298c95c708";
-    sha256 = "0z7dz3nxb2cd1fr2p92lp02l0rky3invcdl3rp12wqvskjrak5b3";
+    sha256 = "0a5zbxvr7ls0s9f1alp8sf0df0cripqcs0x71ldqdpal9hvqwif1";
     os = "linux";
     arch = "x86_64";
   };
