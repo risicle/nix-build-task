@@ -8,8 +8,8 @@ let
   # TODO use a lighter-weight base image
   baseImage_ = if baseImage != null then baseImage else pkgs.dockerTools.pullImage {
     imageName = "nixos/nix";
-    imageDigest = "sha256:a6bcef50c7ca82ca66965935a848c8c388beb78c9a5de3e3b3d4ea298c95c708";
-    sha256 = "0a5zbxvr7ls0s9f1alp8sf0df0cripqcs0x71ldqdpal9hvqwif1";
+    imageDigest = "sha256:1e19753e8150c11afb8327d47595e41707c23cb36907539bb48cfa703821a2a8";
+    sha256 = "054y3m1fwv1iiqckx17s7ldd1av6crmwypsmvjnqhy8vv0mic0gd";
     os = "linux";
     arch = "x86_64";
   };
