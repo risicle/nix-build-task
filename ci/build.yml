@@ -84,7 +84,7 @@ jobs:
                 # using but not pushing to cache from stage-0
                 $CACHIX use ((cachix-cache))
 
-                nix-channel --add https://nixos.org/channels/nixos-20.09 nixpkgs
+                nix-channel --add https://nixos.org/channels/nixos-21.11 nixpkgs
                 nix-channel --update
                 SKOPEO=$(nix-build '<nixpkgs>' -A skopeo)/bin/skopeo
                 OCI_IMAGE_TOOL=$(nix-build '<nixpkgs>' -A oci-image-tool)/bin/oci-image-tool
