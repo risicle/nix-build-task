@@ -66,6 +66,7 @@ jobs:
             type: registry-image
             source:
               repository: nixos/nix
+              tag: sha256:1e19753e8150c11afb8327d47595e41707c23cb36907539bb48cfa703821a2a8
           inputs:
             - name: nix-build-task-git
           outputs:
