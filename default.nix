@@ -27,7 +27,7 @@ in rec {
         gnutar
         gzip
         nix
-        oci-image-tool
+        umoci
         skopeo
         xz
       ]);
