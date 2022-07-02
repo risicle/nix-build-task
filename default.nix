@@ -14,6 +14,7 @@ let
     arch = "x86_64";
   };
 in rec {
+  inherit (pkgs) niv;
   image = pkgs.dockerTools.buildImage {
     name = "nix-build-task";
     tag = "latest";
@@ -27,7 +28,7 @@ in rec {
         gnutar
         gzip
         nix
-        oci-image-tool
+        umoci
         skopeo
         xz
       ]);
