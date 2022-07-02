@@ -219,12 +219,12 @@ def _image_unpack(image_type, image_tar_path):
         rootfs_path = image_tar_path.parent / "rootfs"
         subprocess.run(
             (
-                "oci-image-tool",
+                "umoci",
+                "raw",
                 "unpack",
+                "--image",
                 td,
                 rootfs_path,
-                "--ref",
-                "name=latest",
             ),
             check=True,
         )
