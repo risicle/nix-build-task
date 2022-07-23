@@ -1089,7 +1089,7 @@ jobs:
                 git clone nix-build-task-git nix-build-task-git-bumped
 
                 pushd nix-build-task-git-bumped
-                bump-sources 2>&1 | tee .bump-sources-output
+                bump-sources 2>&1 | col -b | tee .bump-sources-output
                 popd
       - task: eval-orig-outpaths
         config:

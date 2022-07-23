@@ -58,6 +58,7 @@ in rec {
         git
         nix
         busybox
+        util-linux
         (linkFarm "bump-sources-bin" [{name = "bin/bump-sources"; path = bumpSources;}])
       ];
     };
