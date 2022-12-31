@@ -71,7 +71,7 @@ jobs:
             type: registry-image
             source:
               repository: nixos/nix
-              tag: sha256:1e19753e8150c11afb8327d47595e41707c23cb36907539bb48cfa703821a2a8
+              tag: sha256:840bec8bcedf4858ddc525e1a9f41240c2c2a1380fd5315e756119ef66a0aed6
           inputs:
             - name: nix-build-task-git
           outputs:
@@ -79,7 +79,8 @@ jobs:
           params:
             CACHIX_SIGNING_KEY: ((cachix-signing-key))
           run:
-            path: /bin/ash
+            # rely on PATH to find bash
+            path: bash
             args:
               - -e
               - -c

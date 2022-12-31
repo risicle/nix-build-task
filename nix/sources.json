@@ -1,4 +1,16 @@
 {
+    "nix": {
+        "branch": "master",
+        "description": "Nix, the purely functional package manager",
+        "homepage": "https://nixos.org/",
+        "owner": "NixOS",
+        "repo": "nix",
+        "rev": "0fb5024d8df46a47f5367c5b0a51f0b2f6d50032",
+        "sha256": "1x8fqbn91w3dh1rczmiqiqi2av2gwlz8ih4h8mp847awz4h45wiz",
+        "type": "tarball",
+        "url": "https://github.com/NixOS/nix/archive/0fb5024d8df46a47f5367c5b0a51f0b2f6d50032.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "nixpkgs": {
         "branch": "nixos-23.11",
         "description": "Nix Packages collection",
