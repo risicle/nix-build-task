@@ -32,6 +32,7 @@ in rec {
     ] ++ pkgs.lib.optional includeTarball {name = "linux_1_0.tar.gz"; path = linux_1_0;}
   );
   skopeo = pkgs.skopeo;
+  bash = pkgs.bash;
   deliberatelyNonDeterministicBTD = mkNonDeterministicDrv "${someArg}-btd" "" "";
   deliberatelyNonDeterministicRTD = mkNonDeterministicDrv "${someArg}-rtd" "" "";
   deliberatelyNonDeterministic = mkNonDeterministicDrv someArg deliberatelyNonDeterministicRTD deliberatelyNonDeterministicBTD;
