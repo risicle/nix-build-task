@@ -393,51 +393,36 @@ jobs:
                   bunzip2 -c $f >> all_logs
                 done
                 egrep 'Building something slightly random' all_logs
-      - try:
-          task: build-non-deterministic-enforce-option
-          image: nix-build-task-staging-dockerhub
-          config:
-            platform: linux
-            inputs:
-              - name: nix-build-task-git
-            outputs:
-              - name: non-deterministic-output
-                path: output
-            params:
-              NIXFILE: nix-build-task-git/tests/other.nix
-              ATTR: deliberatelyNonDeterministic
-              NIX_OPTION_enforce-determinism: true
-              NIX_OPTION_repeat: 2
-            run:
-              path: /bin/build
-          on_failure:
-            task: record-determinism-failure
-            image: busybox-image
-            config:
-              platform: linux
-              outputs:
-                - name: non-deterministic-output
-              run:
-                path: /bin/ash
-                args:
-                  - -e
-                  - -c
-                  - |
-                    touch non-deterministic-output/failure-recorded
-      - task: check-determinism-failure
+      - task: build-alt-system-option
+        image: nix-build-task-staging-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: alt-system-output
+              path: output
+          params:
+            NIXFILE: nix-build-task-git/tests/other.nix
+            ATTR: bash
+            NIX_OPTION_system: i686-linux
+          run:
+            path: /bin/build
+      - task: check-output-arch
         image: busybox-image
         config:
           platform: linux
           inputs:
-            - name: non-deterministic-output
+            - name: alt-system-output
           run:
             path: /bin/ash
             args:
               - -e
               - -c
               - |
-                if ! [ -e non-deterministic-output/failure-recorded ] ; then
-                  echo "Expected non-deterministic-output/failure-recorded to have been created by record-determinism-failure"
+                ELF_CLASS_BYTE="$(hexdump -e '"0x%02x"' -n 1 -s 4 < alt-system-output/result/bin/bash)"
+                if [ "$ELF_CLASS_BYTE" != '0x01' ] ; then
+                  echo "Expected output binary's ELF_CLASS_BYTE to be 0x01 (32-bit) but was $ELF_CLASS_BYTE"
                   exit 7
                 fi
       - task: build-with-nar-export
