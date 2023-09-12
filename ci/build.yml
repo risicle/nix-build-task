@@ -50,6 +50,11 @@ jobs:
         staging-docker-repo: ((staging-docker-repo))
         final-docker-repo: ((final-docker-repo))
         bump-sources-branch: ((bump-sources-branch))
+        cachix-cache: ((cachix-cache))
+        cachix-dhall: ((cachix-dhall))
+        cachix-signing-key: ((cachix-signing-key))
+        dockerhub-username: ((dockerhub-username))
+        dockerhub-password: ((dockerhub-password))
 
   - name: bootstrap-image
     serial: true
