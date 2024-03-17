@@ -1048,6 +1048,8 @@ jobs:
             - test-cachix
             - test-eval-outpaths
           trigger: true
+          params:
+            fetch_tags: true
       - task: build-busybox-git-image
         image: nix-build-task-staging-dockerhub-rootfs
         config:
