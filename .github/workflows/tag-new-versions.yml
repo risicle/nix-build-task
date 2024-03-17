@@ -8,7 +8,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - run: |
+    - name: tag-and-attempt-push
+      run: |
         PUSH_OUT=$(mktemp)
         git tag "test-$(cat VERSION)"
-        git push "test-$(cat VERSION)" 2>&1 | tee $PUSH_OUT || grep -Fi 'already exists' $PUSH_OUT
+        git push origin "test-$(cat VERSION)" 2>&1 | tee $PUSH_OUT || grep -Fi 'already exists' $PUSH_OUT
