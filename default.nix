@@ -38,6 +38,14 @@ rec {
       Cmd = [ "/bin/build" ];
     };
   });
+  busyboxGitImage = pkgs.dockerTools.buildLayeredImage {
+    name = "nix-build-task-busybox-git";
+    contents = with pkgs; [
+      bash
+      busybox
+      git
+    ];
+  };
   bumpSources = pkgs.writeScript "bump-sources" ''
     #!${pkgs.bash}/bin/bash
     set -e
@@ -45,19 +53,25 @@ rec {
     ${pkgs.niv}/bin/niv update nix
     ${pkgs.niv}/bin/niv update nixpkgs
   '';
+  bumpMinorVersion = pkgs.writeScript "bump-minor-version" ''
+    #!${pkgs.bash}/bin/bash
+    set -e
+
+    ${pkgs.semver-tool}/bin/semver bump patch "$(cat ./VERSION)" > ./VERSION
+  '';
   bumpSourcesImage = pkgs.dockerTools.buildLayeredImage {
     name = "nix-build-task-bump-sources";
-    contents = pkgs.symlinkJoin {
-      name = "contents";
-      paths = with pkgs; [
-        bash
-        cacert
-        git
-        nix
-        busybox
-        (linkFarm "bump-sources-bin" [{name = "bin/bump-sources"; path = bumpSources;}])
-      ];
-    };
+    contents = with pkgs; [
+      bash
+      cacert
+      git
+      nix
+      busybox
+      (linkFarm "bump-sources-bin" [
+        {name = "bin/bump-sources"; path = bumpSources;}
+        {name = "bin/bump-minor-version"; path = bumpMinorVersion;}
+      ])
+    ];
     config.Env = let
       crtFile = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
     in [
