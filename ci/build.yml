@@ -1072,24 +1072,22 @@ jobs:
           inputs:
             - name: nix-build-task-git
           run:
+            dir: nix-build-task-git
             path: /bin/bash
             args:
               - -e
               - -c
               - |
                 set -o pipefail
-                (
-                  cd nix-build-task-git/
-                  git tag --points-at HEAD | while read -r TAG ; do
-                    if [ "$TAG" = "test-$(cat ./VERSION)" ] ; then
-                      echo "found tag $TAG"
-                      return 0
-                    fi
-                  done
-                  echo "no tag matching VERSION $(cat ./VERSION): not proceeding"
-                  return 1
-                )
-                exit $?
+
+                git tag --points-at HEAD | while read -r TAG ; do
+                  if [ "$TAG" = "test-$(cat ./VERSION)" ] ; then
+                    echo "found tag $TAG"
+                    exit 0
+                  fi
+                done
+                echo "no tag matching VERSION $(cat ./VERSION): not proceeding"
+                exit 1
       - put: nix-build-task-final-dockerhub
         params:
           image: nix-build-task-staging-dockerhub-oci/image.tar
