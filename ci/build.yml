@@ -1078,6 +1078,7 @@ jobs:
                 set -o pipefail
                 (
                   cd nix-build-task-git/
+                  git tag --points-at HEAD
                   git tag --points-at HEAD | while read -r TAG ; do
                     if [ "$TAG" = "v$(cat ./VERSION)" ] ; then
                       echo "found tag $TAG"
