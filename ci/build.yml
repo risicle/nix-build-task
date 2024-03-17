@@ -1023,7 +1023,8 @@ jobs:
     serial: true
     plan:
       - in_parallel:
-        - get: nix-build-task-staging-dockerhub
+        - get: nix-build-task-staging-dockerhub-oci
+          resource: nix-build-task-staging-dockerhub
           passed:
             - test-build-images
             - test-build-other
@@ -1032,6 +1033,14 @@ jobs:
           trigger: true
           params:
             format: oci
+        - get: nix-build-task-staging-dockerhub-rootfs
+          resource: nix-build-task-staging-dockerhub
+          passed:
+            - test-build-images
+            - test-build-other
+            - test-cachix
+            - test-eval-outpaths
+          trigger: true
         - get: nix-build-task-git
           passed:
             - test-build-images
@@ -1040,7 +1049,7 @@ jobs:
             - test-eval-outpaths
           trigger: true
       - task: build-busybox-git-image
-        image: nix-build-task-staging-dockerhub
+        image: nix-build-task-staging-dockerhub-rootfs
         config:
           platform: linux
           inputs:
@@ -1079,7 +1088,7 @@ jobs:
                 )
       - put: nix-build-task-final-dockerhub
         params:
-          image: nix-build-task-staging-dockerhub/image.tar
+          image: nix-build-task-staging-dockerhub-oci/image.tar
           additional_tags: nix-build-task-git/VERSION
 
   - name: bump-sources
