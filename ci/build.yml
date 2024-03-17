@@ -1080,12 +1080,12 @@ jobs:
               - |
                 set -o pipefail
 
-                git tag --points-at HEAD | while read -r TAG ; do
+                while read -r TAG ; do
                   if [ "$TAG" = "test-$(cat ./VERSION)" ] ; then
                     echo "found tag $TAG"
                     exit 0
                   fi
-                done
+                done <(git tag --points-at HEAD)
                 echo "no tag matching VERSION $(cat ./VERSION): not proceeding"
                 exit 1
       - put: nix-build-task-final-dockerhub
