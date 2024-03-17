@@ -1083,11 +1083,11 @@ jobs:
                   git tag --points-at HEAD | while read -r TAG ; do
                     if [ "$TAG" = "test-$(cat ./VERSION)" ] ; then
                       echo "found tag $TAG"
-                      exit 0
+                      return 0
                     fi
                   done
                   echo "no tag matching VERSION $(cat ./VERSION): not proceeding"
-                  exit 1
+                  return 1
                 )
                 exit $?
       - put: nix-build-task-final-dockerhub
