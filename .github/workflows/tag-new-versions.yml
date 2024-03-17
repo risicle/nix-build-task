@@ -1,0 +1,14 @@
+on:
+  push:
+    branches: [ ris-full-nix-image ]
+
+jobs:
+  tag-new-versions:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - run: |
+        PUSH_OUT=$(mktemp)
+        git tag "test-$(cat VERSION)"
+        git push "test-$(cat VERSION)" 2>&1 | tee $PUSH_OUT || grep -Fi 'already exists' $PUSH_OUT
