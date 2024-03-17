@@ -1039,9 +1039,48 @@ jobs:
             - test-cachix
             - test-eval-outpaths
           trigger: true
+      - task: build-busybox-git-image
+        image: nix-build-task-staging-dockerhub
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: busybox-git-image
+              path: output
+          params:
+            NIXFILE: nix-build-task-git/
+            ATTR: busyboxGitImage
+            OUTPUT_PREPARE_IMAGE: unpack
+          run:
+            path: /bin/build
+      - task: check-for-git-version-tag
+        image: busybox-git-image
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          run:
+            path: /bin/bash
+            args:
+              - -e
+              - -c
+              - |
+                set -o pipefail
+                (
+                  cd nix-build-task-git/
+                  git tag --points-at HEAD | while read -r TAG ; do
+                    if [ "$TAG" = "v$(cat ./VERSION)" ] ; then
+                      echo "found tag $TAG"
+                      exit 0
+                    fi
+                  done
+                  exit 1
+                )
       - put: nix-build-task-final-dockerhub
         params:
           image: nix-build-task-staging-dockerhub/image.tar
+          additional_tags: nix-build-task-git/VERSION
 
   - name: bump-sources
     serial: true
@@ -1150,17 +1189,22 @@ jobs:
                   fi
 
                   echo "Difference detected"
-                  pushd nix-build-task-git-bumped
+                  (
+                    pushd nix-build-task-git-bumped
 
-                  echo -n $'bump sources\n\noutput from bump-sources:\n\n' >> .message
-                  cat .bump-sources-output >> .message
+                    echo -n $'bump sources\n\noutput from bump-sources:\n\n' >> .message
+                    cat .bump-sources-output >> .message
 
-                  git checkout -b bump-sources
+                    git checkout -b bump-sources
 
-                  git config user.email 'bump.sources@humanleg.org.uk'
-                  git config user.name 'bump-sources'
-                  git commit --all --file=.message
-                  popd
+                    git config user.email 'bump.sources@humanleg.org.uk'
+                    git config user.name 'bump-sources'
+                    git commit --all --file=.message
+
+                    bump-version
+                    git add ./VERSION
+                    git commit -m "bump version to $(cat ./VERSION)"
+                  )
           on_success:
             put: nix-build-task-git-bump-sources-branch
             params:
