@@ -1085,7 +1085,7 @@ jobs:
                     echo "found tag $TAG"
                     exit 0
                   fi
-                done <(git tag --points-at HEAD)
+                done < <(git tag --points-at HEAD)
                 echo "no tag matching VERSION $(cat ./VERSION): not proceeding"
                 exit 1
       - put: nix-build-task-final-dockerhub
