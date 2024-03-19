@@ -71,7 +71,7 @@ jobs:
             type: registry-image
             source:
               repository: nixos/nix
-              tag: sha256:1e19753e8150c11afb8327d47595e41707c23cb36907539bb48cfa703821a2a8
+              tag: sha256:840bec8bcedf4858ddc525e1a9f41240c2c2a1380fd5315e756119ef66a0aed6
           inputs:
             - name: nix-build-task-git
           outputs:
@@ -79,7 +79,8 @@ jobs:
           params:
             CACHIX_SIGNING_KEY: ((cachix-signing-key))
           run:
-            path: /bin/ash
+            # rely on PATH to find bash
+            path: bash
             args:
               - -e
               - -c
@@ -1022,7 +1023,8 @@ jobs:
     serial: true
     plan:
       - in_parallel:
-        - get: nix-build-task-staging-dockerhub
+        - get: nix-build-task-staging-dockerhub-oci
+          resource: nix-build-task-staging-dockerhub
           passed:
             - test-build-images
             - test-build-other
@@ -1031,6 +1033,14 @@ jobs:
           trigger: true
           params:
             format: oci
+        - get: nix-build-task-staging-dockerhub-rootfs
+          resource: nix-build-task-staging-dockerhub
+          passed:
+            - test-build-images
+            - test-build-other
+            - test-cachix
+            - test-eval-outpaths
+          trigger: true
         - get: nix-build-task-git
           passed:
             - test-build-images
@@ -1038,9 +1048,48 @@ jobs:
             - test-cachix
             - test-eval-outpaths
           trigger: true
+          params:
+            fetch_tags: true
+      - task: build-busybox-git-image
+        image: nix-build-task-staging-dockerhub-rootfs
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          outputs:
+            - name: busybox-git-image
+              path: output
+          params:
+            NIXFILE: nix-build-task-git/
+            ATTR: busyboxGitImage
+            OUTPUT_PREPARE_IMAGE: unpack
+          run:
+            path: /bin/build
+      - task: check-for-git-version-tag
+        image: busybox-git-image
+        config:
+          platform: linux
+          inputs:
+            - name: nix-build-task-git
+          run:
+            dir: nix-build-task-git
+            path: /bin/bash
+            args:
+              - -e
+              - -c
+              - |
+                while read -r TAG ; do
+                  if [ "$TAG" = "v$(cat ./VERSION)" ] ; then
+                    echo "found tag $TAG"
+                    exit 0
+                  fi
+                done < <(git tag --points-at HEAD)  # avoid loop being in subshell
+                echo "no tag matching VERSION $(cat ./VERSION): not proceeding with push"
+                exit 1
       - put: nix-build-task-final-dockerhub
         params:
-          image: nix-build-task-staging-dockerhub/image.tar
+          image: nix-build-task-staging-dockerhub-oci/image.tar
+          additional_tags: nix-build-task-git/VERSION
 
   - name: bump-sources
     serial: true
@@ -1149,17 +1198,22 @@ jobs:
                   fi
 
                   echo "Difference detected"
-                  pushd nix-build-task-git-bumped
+                  (
+                    pushd nix-build-task-git-bumped
 
-                  echo -n $'bump sources\n\noutput from bump-sources:\n\n' >> .message
-                  cat .bump-sources-output >> .message
+                    echo -n $'bump sources\n\noutput from bump-sources:\n\n' >> .message
+                    cat .bump-sources-output >> .message
 
-                  git checkout -b bump-sources
+                    git checkout -b bump-sources
 
-                  git config user.email 'bump.sources@humanleg.org.uk'
-                  git config user.name 'bump-sources'
-                  git commit --all --file=.message
-                  popd
+                    git config user.email 'bump.sources@humanleg.org.uk'
+                    git config user.name 'bump-sources'
+                    git commit --all --file=.message
+
+                    bump-version
+                    git add ./VERSION
+                    git commit -m "bump version to $(cat ./VERSION)"
+                  )
           on_success:
             put: nix-build-task-git-bump-sources-branch
             params:
