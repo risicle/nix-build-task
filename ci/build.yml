@@ -1136,44 +1136,45 @@ jobs:
                 pushd nix-build-task-git-bumped
                 bump-sources 2>&1 | tee .bump-sources-output
                 popd
-      - task: eval-orig-outpaths
-        config:
-          platform: linux
-          image_resource:
-            type: registry-image
-            source:
-              repository: risicle/nix-build-task
-          inputs:
-            - name: nix-build-task-git
-          outputs:
-            - name: orig-outpaths
-              path: output
-          params:
-            NIXFILE: nix-build-task-git/
-            ATTR: image
-          run:
-            path: /bin/build
-            args:
-              - eval-outpaths
-      - task: eval-bumped-outpaths
-        config:
-          platform: linux
-          image_resource:
-            type: registry-image
-            source:
-              repository: risicle/nix-build-task
-          inputs:
-            - name: nix-build-task-git-bumped
-          outputs:
-            - name: bumped-outpaths
-              path: output
-          params:
-            NIXFILE: nix-build-task-git-bumped/
-            ATTR: image
-          run:
-            path: /bin/build
-            args:
-              - eval-outpaths
+      - in_parallel:
+        - task: eval-orig-outpaths
+          config:
+            platform: linux
+            image_resource:
+              type: registry-image
+              source:
+                repository: risicle/nix-build-task
+            inputs:
+              - name: nix-build-task-git
+            outputs:
+              - name: orig-outpaths
+                path: output
+            params:
+              NIXFILE: nix-build-task-git/
+              ATTR: image
+            run:
+              path: /bin/build
+              args:
+                - eval-outpaths
+        - task: eval-bumped-outpaths
+          config:
+            platform: linux
+            image_resource:
+              type: registry-image
+              source:
+                repository: risicle/nix-build-task
+            inputs:
+              - name: nix-build-task-git-bumped
+            outputs:
+              - name: bumped-outpaths
+                path: output
+            params:
+              NIXFILE: nix-build-task-git-bumped/
+              ATTR: image
+            run:
+              path: /bin/build
+              args:
+                - eval-outpaths
       - try:
           task: compare-and-commit
           image: bump-sources-image
@@ -1198,22 +1199,22 @@ jobs:
                   fi
 
                   echo "Difference detected"
-                  (
-                    pushd nix-build-task-git-bumped
 
-                    echo -n $'bump sources\n\noutput from bump-sources:\n\n' >> .message
-                    cat .bump-sources-output >> .message
+                  pushd nix-build-task-git-bumped
 
-                    git checkout -b bump-sources
+                  echo -n $'bump sources\n\noutput from bump-sources:\n\n' >> .message
+                  cat .bump-sources-output >> .message
 
-                    git config user.email 'bump.sources@humanleg.org.uk'
-                    git config user.name 'bump-sources'
-                    git commit --all --file=.message
+                  git checkout -b bump-sources
 
-                    bump-version
-                    git add ./VERSION
-                    git commit -m "bump version to $(cat ./VERSION)"
-                  )
+                  git config user.email 'bump.sources@humanleg.org.uk'
+                  git config user.name 'bump-sources'
+                  git commit --all --file=.message
+
+                  bump-minor-version
+                  git add ./VERSION
+                  git commit -m "bump version to $(cat ./VERSION)"
+
           on_success:
             put: nix-build-task-git-bump-sources-branch
             params:

@@ -50,6 +50,7 @@ rec {
     #!${pkgs.bash}/bin/bash
     set -e
 
+    export PATH="${pkgs.lib.makeBinPath [ pkgs.nix ]}:$PATH"
     ${pkgs.niv}/bin/niv update nix
     ${pkgs.niv}/bin/niv update nixpkgs
   '';
