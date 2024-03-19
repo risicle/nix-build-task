@@ -55,6 +55,7 @@ jobs:
         cachix-signing-key: ((cachix-signing-key))
         dockerhub-username: ((dockerhub-username))
         dockerhub-password: ((dockerhub-password))
+        github-ssh-key: ((github-ssh-key))
 
   - name: bootstrap-image
     serial: true
