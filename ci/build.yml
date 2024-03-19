@@ -1198,22 +1198,22 @@ jobs:
                   fi
 
                   echo "Difference detected"
-                  (
-                    pushd nix-build-task-git-bumped
 
-                    echo -n $'bump sources\n\noutput from bump-sources:\n\n' >> .message
-                    cat .bump-sources-output >> .message
+                  pushd nix-build-task-git-bumped
 
-                    git checkout -b bump-sources
+                  echo -n $'bump sources\n\noutput from bump-sources:\n\n' >> .message
+                  cat .bump-sources-output >> .message
 
-                    git config user.email 'bump.sources@humanleg.org.uk'
-                    git config user.name 'bump-sources'
-                    git commit --all --file=.message
+                  git checkout -b bump-sources
 
-                    bump-version
-                    git add ./VERSION
-                    git commit -m "bump version to $(cat ./VERSION)"
-                  )
+                  git config user.email 'bump.sources@humanleg.org.uk'
+                  git config user.name 'bump-sources'
+                  git commit --all --file=.message
+
+                  bump-minor-version
+                  git add ./VERSION
+                  git commit -m "bump version to $(cat ./VERSION)"
+
           on_success:
             put: nix-build-task-git-bump-sources-branch
             params:
