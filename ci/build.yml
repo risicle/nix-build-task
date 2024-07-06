@@ -737,8 +737,9 @@ jobs:
                 OUTPATH_HASH=$(egrep -o '\b[a-z0-9]{32}\b' nd-nopush-emptycache/result.outpath)
                 URL="https://((cachix-cache)).cachix.org/$OUTPATH_HASH.narinfo"
                 echo "Probing $URL"
-                if curl -f $URL || [ $? != 22 ] ; then
-                  echo "Expected to get 404 when checking cache"
+                STATUS_CODE=$(curl -s -o /dev/null -w '%{http_code}' "$URL")
+                if [ "$STATUS_CODE" != '404' ] ; then
+                  echo "Expected to get 404 when checking cache, got $STATUS_CODE"
                   exit 7
                 fi
       - task: build-nd-emptycache
