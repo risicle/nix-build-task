@@ -17,7 +17,7 @@ rec {
       pkgs.runCommand "nix-build-task-build" {
         buildInputs = [ pkgs.python3 pkgs.makeWrapper ];
         wrappedPath = pkgs.lib.makeBinPath (with pkgs; [
-          haskellPackages.cachix
+          cachix
           gnutar
           gzip
           pkgs.nix
