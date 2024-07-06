@@ -462,9 +462,9 @@ def _init_cachix():
         elif cachix_push.lower() not in _false_strs:
             command_prefix = command_prefix + (
                 "cachix",
-                "+RTS",
-                "-xc",
-                "-RTS",
+                # "+RTS",
+                # "-xc",
+                # "-RTS",
             ) + cachix_extra_args + (
                 "watch-exec",
             ) + cachix_push_extra_args + (
