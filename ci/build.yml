@@ -737,7 +737,7 @@ jobs:
                 OUTPATH_HASH=$(egrep -o '\b[a-z0-9]{32}\b' nd-nopush-emptycache/result.outpath)
                 URL="https://((cachix-cache)).cachix.org/$OUTPATH_HASH.narinfo"
                 echo "Probing $URL"
-                if curl -f $URL || { EXIT_CODE=$? && [ $EXIT_CODE != 22 ] } ; then
+                if curl -f $URL || { EXIT_CODE=$? ; [ $EXIT_CODE != 22 ] ;} ; then
                   echo "Expected to get 404 when checking cache, EXIT_CODE=$EXIT_CODE"
                   exit 7
                 fi
