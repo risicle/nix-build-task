@@ -83,9 +83,10 @@ jobs:
             # rely on PATH to find bash
             path: bash
             args:
-              - -e
               - -c
               - |
+                set -euo pipefail
+
                 CACHIX=$(nix-build '<nixpkgs>' -A cachix)/bin/cachix
 
                 # TODO re-enable cachix use in bootstrap once we're using a
@@ -168,9 +169,10 @@ jobs:
           run:
             path: /bin/ash
             args:
-              - -e
               - -c
               - |
+                set -euo pipefail
+
                 stat hopefully-alpine-image/result
                 stat hopefully-alpine-image/result-2
                 stat hopefully-alpine-image/result-3
@@ -206,9 +208,10 @@ jobs:
           run:
             path: /bin/bash
             args:
-              - -e
               - -c
               - |
+                set -euo pipefail
+
                 cf help
                 if ! [[ -a separate-skopeo-alone-image/image.tar ]] ; then
                   echo "separate-skopeo-alone-image/image.tar missing"
@@ -276,9 +279,10 @@ jobs:
           run:
             path: /bin/ash
             args:
-              - -e
               - -c
               - |
+                set -euo pipefail
+
                 # check dirs have no links
                 find linux-dirs -type l > found_symlinks
                 if [ -n "$(cat found_symlinks)" ] ; then
@@ -316,9 +320,10 @@ jobs:
               run:
                 path: /bin/ash
                 args:
-                  - -e
                   - -c
                   - |
+                    set -euo pipefail
+
                     touch linux-1-0/failure-recorded
       - task: check-unpack-failure
         image: busybox-image
@@ -329,9 +334,10 @@ jobs:
           run:
             path: /bin/ash
             args:
-              - -e
               - -c
               - |
+                set -euo pipefail
+
                 if ! [ -e linux-1-0/failure-recorded ] ; then
                   echo "Expected linux-1-0/failure-recorded to have been created by record-unpack-failure"
                   exit 7
@@ -361,9 +367,10 @@ jobs:
           run:
             path: /bin/ash
             args:
-              - -e
               - -c
               - |
+                set -euo pipefail
+
                 if [ -e args-output/result/linux_1_0.tar.gz ] ; then
                   echo "Output shouldn't include tarball"
                   exit 7
@@ -393,9 +400,10 @@ jobs:
           run:
             path: /bin/ash
             args:
-              - -e
               - -c
               - |
+                set -euo pipefail
+
                 for f in $(find logs-out -name '*.bz2') ; do
                   bunzip2 -c $f >> all_logs
                 done
@@ -424,9 +432,10 @@ jobs:
           run:
             path: /bin/ash
             args:
-              - -e
               - -c
               - |
+                set -euo pipefail
+
                 ELF_CLASS_BYTE="$(hexdump -e '"0x%02x"' -n 1 -s 4 < alt-system-output/result/bin/bash)"
                 if [ "$ELF_CLASS_BYTE" != '0x01' ] ; then
                   echo "Expected output binary's ELF_CLASS_BYTE to be 0x01 (32-bit) but was $ELF_CLASS_BYTE"
@@ -472,9 +481,10 @@ jobs:
           run:
             path: /bin/ash
             args:
-              - -e
               - -c
               - |
+                set -euo pipefail
+
                 if [ "$(stat -c '%s' nd-nar/result.nar)" -ge "$(stat -c '%s' nd-nar-runtime-closure/result.nar)" ] ; then
                   echo "Expected nd-nar-runtime-closure/result.nar to be larger than nd-nar/result.nar"
                   exit 7
@@ -548,9 +558,10 @@ jobs:
           run:
             path: /bin/ash
             args:
-              - -e
               - -c
               - |
+                set -euo pipefail
+
                 diff -u busybox-image/result.outpath busybox-outpath/result.outpath
                 echo "No difference detected"
       - task: eval-multi-out
@@ -587,9 +598,10 @@ jobs:
           run:
             path: /bin/ash
             args:
-              - -e
               - -c
               - |
+                set -euo pipefail
+
                 egrep -e '^[^-]+-multi-out-foo$' multi-out-outpath/result.outpath
                 egrep -e '^[^-]+-multi-out-foo-baz$' multi-out-baz-outpath/result.outpath
                 egrep -e '^[^-]+-multi-out-foo-foo$' multi-out-foo-outpath/result.outpath
@@ -636,9 +648,10 @@ jobs:
           run:
             path: /bin/ash
             args:
-              - -e
               - -c
               - |
+                set -euo pipefail
+
                 if diff -u linux-dir-no-args/result.outpath linux-dir-args-buz/result.outpath ; then
                   echo "Expected outputs linux-dir-no-args and linux-dir-args-buz to be different"
                   exit 7
@@ -680,9 +693,10 @@ jobs:
           run:
             path: /bin/ash
             args:
-              - -e
               - -c
               - |
+                set -euo pipefail
+
                 hexdump -e '/1 "%02x"' -n 8 /dev/random > run-random-output/value
       - load_var: run-random
         file: run-random-output/value
@@ -731,9 +745,10 @@ jobs:
           run:
             path: /bin/ash
             args:
-              - -e
               - -c
               - |
+                set -euo pipefail
+
                 OUTPATH_HASH=$(egrep -o '\b[a-z0-9]{32}\b' nd-nopush-emptycache/result.outpath)
                 URL="https://((cachix-cache)).cachix.org/$OUTPATH_HASH.narinfo"
                 echo "Probing $URL"
@@ -768,9 +783,10 @@ jobs:
           run:
             path: /bin/ash
             args:
-              - -e
               - -c
               - |
+                set -euo pipefail
+
                 OUTPATH_HASH=$(egrep -o '\b[a-z0-9]{32}\b' nd-emptycache/result.outpath)
                 URL="https://((cachix-cache)).cachix.org/$OUTPATH_HASH.narinfo"
                 echo "Probing $URL"
@@ -823,9 +839,11 @@ jobs:
           run:
             path: /bin/ash
             args:
-              - -e
+              - -euo pipefail
               - -c
               - |
+                set -euo pipefail
+
                 # if the cache was used, even the nondeterministic output should be
                 # identical (including the flattened link to the nondeterministic
                 # runtime dependency)
@@ -854,9 +872,10 @@ jobs:
           run:
             path: /bin/ash
             args:
-              - -e
               - -c
               - |
+                set -euo pipefail
+
                 echo "$CACHIX_DHALL" > cachix-conf/cachix.dhall
       - task: build-nd-dhall-emptycache
         image: nix-build-task-staging-dockerhub
@@ -906,9 +925,10 @@ jobs:
           run:
             path: /bin/ash
             args:
-              - -e
               - -c
               - |
+                set -euo pipefail
+
                 # if the cache was used, even the nondeterministic output should be
                 # identical (including the flattened link to the nondeterministic
                 # runtime dependency)
@@ -970,9 +990,10 @@ jobs:
           run:
             path: /bin/ash
             args:
-              - -e
               - -c
               - |
+                set -euo pipefail
+
                 # if the cache was used, even the nondeterministic output should be
                 # identical (including the flattened link to the nondeterministic
                 # runtime dependency)
@@ -1013,9 +1034,10 @@ jobs:
           run:
             path: /bin/ash
             args:
-              - -e
               - -c
               - |
+                set -euo pipefail
+
                 OUTPATH_HASH=$(egrep -o '\b[a-z0-9]{32}\b' nd-pushomdrv-emptycache/result.outpath)
                 URL="https://((cachix-cache)).cachix.org/$OUTPATH_HASH.narinfo"
                 echo "Probing $URL"
@@ -1077,9 +1099,10 @@ jobs:
             dir: nix-build-task-git
             path: /bin/bash
             args:
-              - -e
               - -c
               - |
+                set -euo pipefail
+
                 while read -r TAG ; do
                   if [ "$TAG" = "v$(cat ./VERSION)" ] ; then
                     echo "found tag $TAG"
@@ -1130,9 +1153,10 @@ jobs:
           run:
             path: /bin/bash
             args:
-              - -e
               - -c
               - |
+                set -euo pipefail
+
                 git clone nix-build-task-git nix-build-task-git-bumped
 
                 pushd nix-build-task-git-bumped
@@ -1192,9 +1216,10 @@ jobs:
             run:
               path: /bin/bash
               args:
-                - -e
                 - -c
                 - |
+                  set -euo pipefail
+
                   if diff -ru orig-outpaths bumped-outpaths ; then
                     echo "No difference detected"
                     exit 7
