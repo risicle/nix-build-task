@@ -464,6 +464,8 @@ def _init_cachix():
                 "cachix",
             ) + cachix_extra_args + (
                 "watch-exec",
+                "--watch-mode",
+                "store",
             ) + cachix_push_extra_args + (
                 cachix_cache,
                 "--",
